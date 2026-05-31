@@ -12,39 +12,40 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
 
-/* ══════════════════════════════════════
-   مكوّن رئيسي
-══════════════════════════════════════ */
 export default function Sessions() {
-  const [view, setView] = useState("list"); // 'list' | 'detail'
-  const [activeSession, setActiveSession] = useState(null);
+  const [view, setView] = useState("list");
+  const [session, setSession] = useState(null);
+  const [entryTab, setEntryTab] = useState("deposit");
+
+  const openDetail = (s) => {
+    setSession(s);
+    setView("detail");
+  };
+  const openEntries = (s, tab) => {
+    setSession(s);
+    setEntryTab(tab);
+    setView("entries");
+  };
+  const goBack = () => setView("list");
+  const goDetail = () => setView("detail");
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <style>{CSS}</style>
-      {view === "list" ? (
-        <SessionList
-          onOpen={(s) => {
-            setActiveSession(s);
-            setView("detail");
-          }}
-        />
-      ) : (
-        <SessionDetail
-          session={activeSession}
-          onBack={() => {
-            setActiveSession(null);
-            setView("list");
-          }}
-        />
+      {view === "list" && <SessionList onOpen={openDetail} />}
+      {view === "detail" && (
+        <SessionDetail session={session} onBack={goBack} onOpenEntries={openEntries} />
+      )}
+      {view === "entries" && (
+        <EntriesPage session={session} onBack={goDetail} defaultTab={entryTab} />
       )}
     </div>
   );
 }
 
-/* ══════════════════════════════════════
-   قائمة الجلسات
-══════════════════════════════════════ */
+/* ════════════════════════════════════════════
+   SESSION LIST
+════════════════════════════════════════════ */
 function SessionList({ onOpen }) {
   const [sessions, setSessions] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -59,10 +60,14 @@ function SessionList({ onOpen }) {
 
   useEffect(() => {
     if (!uid) return;
-    const qS = query(collection(db, "users", uid, "sessions"), orderBy("createdAt", "desc"));
-    const qC = query(collection(db, "users", uid, "companies"), orderBy("createdAt", "desc"));
-    const u1 = onSnapshot(qS, (s) => setSessions(s.docs.map((d) => ({ id: d.id, ...d.data() }))));
-    const u2 = onSnapshot(qC, (s) => setCompanies(s.docs.map((d) => ({ id: d.id, ...d.data() }))));
+    const u1 = onSnapshot(
+      query(collection(db, "users", uid, "sessions"), orderBy("createdAt", "desc")),
+      (s) => setSessions(s.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    );
+    const u2 = onSnapshot(
+      query(collection(db, "users", uid, "companies"), orderBy("createdAt", "desc")),
+      (s) => setCompanies(s.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    );
     return () => {
       u1();
       u2();
@@ -80,9 +85,12 @@ function SessionList({ onOpen }) {
       companyName: co?.name || "",
       date,
       createdAt: Date.now(),
-      totalNewSYP: 0,
-      totalOldSYP: 0,
-      totalUSD: 0,
+      totalDepNewSYP: 0,
+      totalDepOldSYP: 0,
+      totalDepUSD: 0,
+      totalWthNewSYP: 0,
+      totalWthOldSYP: 0,
+      totalWthUSD: 0,
       entriesCount: 0,
     });
     setLabel("");
@@ -93,76 +101,85 @@ function SessionList({ onOpen }) {
   const handleDelete = async (id, e) => {
     e.stopPropagation();
     setDeleting(id);
-    // حذف الإدخالات أولاً
-    const entriesRef = collection(db, "users", uid, "sessions", id, "entries");
-    const snap = await getDocs(entriesRef);
+    const snap = await getDocs(collection(db, "users", uid, "sessions", id, "entries"));
     await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
     await deleteDoc(doc(db, "users", uid, "sessions", id));
     setDeleting(null);
   };
 
   const filtered = sessions.filter((s) => (filterCo ? s.companyId === filterCo : true));
-
-  const totalStats = {
-    newSYP: sessions.reduce((a, s) => a + (s.totalNewSYP || 0), 0),
-    oldSYP: sessions.reduce((a, s) => a + (s.totalOldSYP || 0), 0),
-    usd: sessions.reduce((a, s) => a + (s.totalUSD || 0), 0),
+  const grand = {
+    depNewSYP: sessions.reduce((a, s) => a + (s.totalDepNewSYP || 0), 0),
+    depOldSYP: sessions.reduce((a, s) => a + (s.totalDepOldSYP || 0), 0),
+    depUSD: sessions.reduce((a, s) => a + (s.totalDepUSD || 0), 0),
+    wthNewSYP: sessions.reduce((a, s) => a + (s.totalWthNewSYP || 0), 0),
+    wthOldSYP: sessions.reduce((a, s) => a + (s.totalWthOldSYP || 0), 0),
+    wthUSD: sessions.reduce((a, s) => a + (s.totalWthUSD || 0), 0),
   };
 
   return (
     <div className="sl-root">
-      {/* Header */}
       <div className="sl-header">
-        <div className="sl-header-bg" />
-        <div className="sl-header-body">
-          <div className="sl-header-left">
-            <div className="sl-header-ico">
-              <i className="fa-solid fa-folder-open" style={{ fontSize: 22, color: "#fff" }} />
+        <div className="sl-hbg" />
+        <div className="sl-htop">
+          <div className="sl-htop-l">
+            <div className="sl-hico">
+              <i className="fa-solid fa-folder-open" style={{ fontSize: 20, color: "#fff" }} />
             </div>
             <div>
-              <h1 className="sl-header-title">الجلسات</h1>
-              <p className="sl-header-sub">تسجيل وتتبع جلسات استلام الأموال</p>
+              <h1 className="sl-htitle">الجلسات</h1>
+              <p className="sl-hsub">تسجيل وتتبع جلسات الإيداع والسحب</p>
             </div>
           </div>
-          <button className="sl-new-btn" onClick={() => setShowForm((f) => !f)}>
+          <button className="sl-newbtn" onClick={() => setShowForm((f) => !f)}>
             <i className={`fa-solid fa-${showForm ? "xmark" : "plus"}`} />
             {showForm ? "إلغاء" : "جلسة جديدة"}
           </button>
         </div>
-
-        {/* Stats bar */}
-        <div className="sl-stats-bar">
+        <div className="sl-stats">
           {[
             {
-              label: "إجمالي ل.س جديد",
-              val: totalStats.newSYP.toLocaleString(),
-              icon: "fa-solid fa-money-bill-wave",
-              color: "#a5b4fc",
+              lbl: "إيداع ل.س جديد",
+              val: grand.depNewSYP.toLocaleString(),
+              ic: "fa-solid fa-arrow-down",
+              cl: "#a5b4fc",
             },
             {
-              label: "إجمالي ل.س قديم",
-              val: totalStats.oldSYP.toLocaleString(),
-              icon: "fa-solid fa-money-bill",
-              color: "#6ee7b7",
+              lbl: "إيداع ل.س قديم",
+              val: grand.depOldSYP.toLocaleString(),
+              ic: "fa-solid fa-arrow-down",
+              cl: "#6ee7b7",
             },
             {
-              label: "إجمالي دولار",
-              val: `$${totalStats.usd.toLocaleString()}`,
-              icon: "fa-solid fa-dollar-sign",
-              color: "#fcd34d",
+              lbl: "إيداع دولار",
+              val: `$${grand.depUSD.toLocaleString()}`,
+              ic: "fa-solid fa-arrow-down",
+              cl: "#fcd34d",
             },
             {
-              label: "عدد الجلسات",
-              val: sessions.length,
-              icon: "fa-solid fa-folder-open",
-              color: "#93c5fd",
+              lbl: "سحب ل.س جديد",
+              val: grand.wthNewSYP.toLocaleString(),
+              ic: "fa-solid fa-arrow-up",
+              cl: "#fca5a5",
+            },
+            {
+              lbl: "سحب ل.س قديم",
+              val: grand.wthOldSYP.toLocaleString(),
+              ic: "fa-solid fa-arrow-up",
+              cl: "#fdba74",
+            },
+            {
+              lbl: "سحب دولار",
+              val: `$${grand.wthUSD.toLocaleString()}`,
+              ic: "fa-solid fa-arrow-up",
+              cl: "#f9a8d4",
             },
           ].map((st, i) => (
             <div key={i} className="sl-stat">
-              <i className={st.icon} style={{ fontSize: 13, color: st.color }} />
+              <i className={st.ic} style={{ fontSize: 12, color: st.cl }} />
               <div>
                 <div className="sl-stat-val">{st.val}</div>
-                <div className="sl-stat-lbl">{st.label}</div>
+                <div className="sl-stat-lbl">{st.lbl}</div>
               </div>
             </div>
           ))}
@@ -170,90 +187,68 @@ function SessionList({ onOpen }) {
       </div>
 
       <div className="sl-body">
-        {/* Add Form */}
         {showForm && (
           <div className="sl-form-card">
             <div className="sl-form-title">
-              <i className="fa-solid fa-folder-plus" style={{ color: "#059669", fontSize: 16 }} />
+              <i className="fa-solid fa-folder-plus" style={{ color: "#059669", fontSize: 15 }} />
               إنشاء جلسة جديدة
             </div>
             {companies.length === 0 ? (
-              <div className="sl-warn">
+              <div className="warn-box">
                 <i className="fa-solid fa-triangle-exclamation" />
-                يجب إضافة شركة أولاً قبل إنشاء جلسة
+                يجب إضافة شركة أولاً
               </div>
             ) : (
               <form onSubmit={handleAdd} className="sl-form">
-                <div className="sl-field">
-                  <label className="sl-label">
-                    <i className="fa-solid fa-tag" style={{ fontSize: 11, color: "#6ee7b7" }} />
-                    اسم الجلسة
-                  </label>
-                  <div className="sl-input-wrap">
-                    <i className="fa-solid fa-folder sl-input-ico" />
-                    <input
-                      className="sl-input"
-                      placeholder="مثال: صندوق الصباح..."
-                      value={label}
-                      onChange={(e) => setLabel(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="sl-field">
-                  <label className="sl-label">
-                    <i
-                      className="fa-solid fa-building"
-                      style={{ fontSize: 11, color: "#6ee7b7" }}
-                    />
-                    الشركة
-                  </label>
-                  <div className="sl-select-wrap">
-                    <i className="fa-solid fa-building sl-input-ico" />
-                    <select
-                      className="sl-select"
-                      value={companyId}
-                      onChange={(e) => setCompanyId(e.target.value)}
-                      required
-                    >
-                      <option value="">اختر الشركة...</option>
-                      {companies.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="sl-field">
-                  <label className="sl-label">
-                    <i
-                      className="fa-regular fa-calendar"
-                      style={{ fontSize: 11, color: "#6ee7b7" }}
-                    />
-                    التاريخ
-                  </label>
-                  <div className="sl-input-wrap">
-                    <i className="fa-regular fa-calendar sl-input-ico" />
-                    <input
-                      className="sl-input"
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <button type="submit" className="sl-submit-btn" disabled={loading}>
+                <Fld label="اسم الجلسة" icon="fa-solid fa-folder">
+                  <input
+                    className="inp"
+                    placeholder="مثال: صندوق الصباح"
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                    required
+                  />
+                </Fld>
+                <Fld label="الشركة" icon="fa-solid fa-building">
+                  <select
+                    className="inp"
+                    value={companyId}
+                    onChange={(e) => setCompanyId(e.target.value)}
+                    required
+                    style={{ appearance: "none", cursor: "pointer" }}
+                  >
+                    <option value="">اختر الشركة...</option>
+                    {companies.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </Fld>
+                <Fld label="التاريخ" icon="fa-regular fa-calendar">
+                  <input
+                    className="inp"
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                  />
+                </Fld>
+                <button
+                  type="submit"
+                  className="btn-green"
+                  disabled={loading}
+                  style={{ alignSelf: "flex-end" }}
+                >
                   {loading ? (
                     <>
-                      <div className="sl-spinner" />
-                      جاري الإنشاء...
+                      <Spin />
+                      جاري...
                     </>
                   ) : (
                     <>
                       <i className="fa-solid fa-folder-plus" />
-                      إنشاء الجلسة
+                      إنشاء
                     </>
                   )}
                 </button>
@@ -262,12 +257,11 @@ function SessionList({ onOpen }) {
           </div>
         )}
 
-        {/* Filter */}
         {sessions.length > 0 && companies.length > 1 && (
-          <div className="sl-filter-wrap">
-            <i className="fa-solid fa-filter sl-filter-ico" />
+          <div className="filter-row">
+            <i className="fa-solid fa-filter" style={{ color: "#94a3b8", fontSize: 13 }} />
             <select
-              className="sl-filter-sel"
+              className="filter-sel"
               value={filterCo}
               onChange={(e) => setFilterCo(e.target.value)}
             >
@@ -281,78 +275,93 @@ function SessionList({ onOpen }) {
           </div>
         )}
 
-        {/* Sessions list */}
         {sessions.length === 0 ? (
-          <div className="sl-empty">
-            <div className="sl-empty-ico">
-              <i className="fa-solid fa-folder-open" style={{ fontSize: 36, color: "#86efac" }} />
-            </div>
-            <div className="sl-empty-title">لا توجد جلسات بعد</div>
-            <div className="sl-empty-sub">أنشئ جلستك الأولى بالضغط على "جلسة جديدة"</div>
-          </div>
+          <Empty
+            icon="fa-solid fa-folder-open"
+            title="لا توجد جلسات بعد"
+            sub="أنشئ جلستك الأولى من الزر أعلاه"
+            color="#86efac"
+          />
         ) : (
           <div className="sl-list">
             {filtered.map((s, i) => (
               <div
                 key={s.id}
-                className="sl-item"
+                className="sl-card"
                 onClick={() => onOpen(s)}
                 style={{ animationDelay: `${i * 0.05}s` }}
               >
-                <div className="sl-item-top">
-                  <div className="sl-item-ico">
+                <div className="sl-card-top">
+                  <div className="sl-card-ico">
                     <i
                       className="fa-solid fa-folder-open"
-                      style={{ fontSize: 18, color: "#059669" }}
+                      style={{ fontSize: 17, color: "#059669" }}
                     />
                   </div>
-                  <div className="sl-item-info">
-                    <div className="sl-item-label">{s.label}</div>
-                    <div className="sl-item-meta">
-                      <span className="sl-item-co">
-                        <i className="fa-solid fa-building" style={{ fontSize: 10 }} />
+                  <div className="sl-card-info">
+                    <div className="sl-card-label">{s.label}</div>
+                    <div className="sl-card-meta">
+                      <span className="meta-co">
+                        <i className="fa-solid fa-building" style={{ fontSize: 9 }} />
                         {s.companyName}
                       </span>
-                      <span className="sl-item-date">
-                        <i className="fa-regular fa-calendar" style={{ fontSize: 10 }} />
+                      <span className="meta-item">
+                        <i className="fa-regular fa-calendar" style={{ fontSize: 9 }} />
                         {s.date}
                       </span>
-                      <span className="sl-item-entries">
-                        <i className="fa-solid fa-list" style={{ fontSize: 10 }} />
+                      <span className="meta-item">
+                        <i className="fa-solid fa-list" style={{ fontSize: 9 }} />
                         {s.entriesCount || 0} إدخال
                       </span>
                     </div>
                   </div>
-                  <div className="sl-item-actions" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      className="sl-del-btn"
-                      onClick={(e) => handleDelete(s.id, e)}
-                      disabled={deleting === s.id}
-                    >
-                      {deleting === s.id ? (
-                        <div className="sl-spinner sl-spinner--red" />
-                      ) : (
-                        <i className="fa-solid fa-trash" />
-                      )}
-                    </button>
+                  <button
+                    className="del-btn"
+                    onClick={(e) => handleDelete(s.id, e)}
+                    disabled={deleting === s.id}
+                  >
+                    {deleting === s.id ? <Spin red /> : <i className="fa-solid fa-trash" />}
+                  </button>
+                </div>
+                <div className="sl-card-amounts">
+                  <div className="amount-group amount-group--dep">
+                    <div className="amount-group-label">
+                      <i className="fa-solid fa-arrow-down" />
+                      إيداع
+                    </div>
+                    <div className="amount-chips">
+                      <span className="chip chip--purple">
+                        {(s.totalDepNewSYP || 0).toLocaleString()} <em>جديد</em>
+                      </span>
+                      <span className="chip chip--teal">
+                        {(s.totalDepOldSYP || 0).toLocaleString()} <em>قديم</em>
+                      </span>
+                      <span className="chip chip--amber">
+                        ${(s.totalDepUSD || 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="amount-divider" />
+                  <div className="amount-group amount-group--wth">
+                    <div className="amount-group-label">
+                      <i className="fa-solid fa-arrow-up" />
+                      سحب
+                    </div>
+                    <div className="amount-chips">
+                      <span className="chip chip--red">
+                        {(s.totalWthNewSYP || 0).toLocaleString()} <em>جديد</em>
+                      </span>
+                      <span className="chip chip--orange">
+                        {(s.totalWthOldSYP || 0).toLocaleString()} <em>قديم</em>
+                      </span>
+                      <span className="chip chip--pink">
+                        ${(s.totalWthUSD || 0).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="sl-item-totals">
-                  <div className="sl-total sl-total--purple">
-                    <span className="sl-total-lbl">ل.س جديد</span>
-                    <span className="sl-total-val">{(s.totalNewSYP || 0).toLocaleString()}</span>
-                  </div>
-                  <div className="sl-total sl-total--teal">
-                    <span className="sl-total-lbl">ل.س قديم</span>
-                    <span className="sl-total-val">{(s.totalOldSYP || 0).toLocaleString()}</span>
-                  </div>
-                  <div className="sl-total sl-total--amber">
-                    <span className="sl-total-lbl">دولار</span>
-                    <span className="sl-total-val">${(s.totalUSD || 0).toLocaleString()}</span>
-                  </div>
-                </div>
-                <div className="sl-item-arrow">
-                  <i className="fa-solid fa-arrow-left" style={{ fontSize: 13 }} />
+                <div className="sl-card-open">
+                  <i className="fa-solid fa-arrow-left" />
                   فتح الجلسة
                 </div>
               </div>
@@ -364,51 +373,268 @@ function SessionList({ onOpen }) {
   );
 }
 
-/* ══════════════════════════════════════
-   تفاصيل الجلسة
-══════════════════════════════════════ */
-function SessionDetail({ session, onBack }) {
+/* ════════════════════════════════════════════
+   SESSION DETAIL
+════════════════════════════════════════════ */
+function SessionDetail({ session, onBack, onOpenEntries }) {
+  const [entries, setEntries] = useState([]);
+  const uid = auth.currentUser?.uid;
+
+  useEffect(() => {
+    if (!uid || !session) return;
+    const u = onSnapshot(
+      query(
+        collection(db, "users", uid, "sessions", session.id, "entries"),
+        orderBy("createdAt", "asc"),
+      ),
+      (s) => setEntries(s.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    );
+    return () => u();
+  }, [session]);
+
+  const deps = entries.filter((e) => e.type === "deposit");
+  const wths = entries.filter((e) => e.type === "withdrawal");
+  const calc = (arr) => ({
+    newSYP: arr.reduce((a, e) => a + (Number(e.newSYP) || 0), 0),
+    oldSYP: arr.reduce((a, e) => a + (Number(e.oldSYP) || 0), 0),
+    usd: arr.reduce((a, e) => a + (Number(e.usd) || 0), 0),
+  });
+  const dT = calc(deps);
+  const wT = calc(wths);
+  const nT = { newSYP: dT.newSYP - wT.newSYP, oldSYP: dT.oldSYP - wT.oldSYP, usd: dT.usd - wT.usd };
+
+  return (
+    <div className="sd-root">
+      <div className="sd-header">
+        <div className="sd-hbg" />
+        <div className="sd-htop">
+          <button className="back-btn" onClick={onBack}>
+            <i className="fa-solid fa-arrow-right" />
+            العودة
+          </button>
+          <div className="sd-hmeta-row">
+            <span>
+              <i className="fa-solid fa-building" style={{ fontSize: 10 }} />
+              {session.companyName}
+            </span>
+            <span>
+              <i className="fa-regular fa-calendar" style={{ fontSize: 10 }} />
+              {session.date}
+            </span>
+            <span>
+              <i className="fa-solid fa-list" style={{ fontSize: 10 }} />
+              {entries.length} إدخال
+            </span>
+          </div>
+        </div>
+        <div className="sd-hinfo">
+          <div className="sd-hico">
+            <i className="fa-solid fa-folder-open" style={{ fontSize: 18, color: "#fff" }} />
+          </div>
+          <h1 className="sd-htitle">{session.label}</h1>
+        </div>
+        <div className="sd-net-bar">
+          {[
+            { lbl: "صافي ل.س جديد", val: nT.newSYP.toLocaleString(), pos: nT.newSYP >= 0 },
+            { lbl: "صافي ل.س قديم", val: nT.oldSYP.toLocaleString(), pos: nT.oldSYP >= 0 },
+            { lbl: "صافي دولار", val: `$${nT.usd.toLocaleString()}`, pos: nT.usd >= 0 },
+            { lbl: "إيداع / سحب", val: `${deps.length} / ${wths.length}`, neutral: true },
+          ].map((n, i) => (
+            <div key={i} className="sd-net-chip">
+              <div className="sd-net-lbl">{n.lbl}</div>
+              <div
+                className={`sd-net-val ${n.neutral ? "" : "sd-net-val--" + (n.pos ? "pos" : "neg")}`}
+              >
+                {n.val}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="sd-body">
+        <div className="sd-summary-grid">
+          <div className="sd-sum-card sd-sum-card--dep">
+            <div className="sd-sum-card-header">
+              <div className="sd-sum-card-ico sd-sum-card-ico--dep">
+                <i className="fa-solid fa-arrow-down" style={{ fontSize: 16, color: "#059669" }} />
+              </div>
+              <div>
+                <div className="sd-sum-card-title">الإيداعات</div>
+                <div className="sd-sum-card-count">{deps.length} إدخال</div>
+              </div>
+            </div>
+            <div className="sd-sum-amounts">
+              {[
+                { lbl: "ل.س جديد", val: dT.newSYP.toLocaleString(), cls: "sd-sum-val--purple" },
+                { lbl: "ل.س قديم", val: dT.oldSYP.toLocaleString(), cls: "sd-sum-val--teal" },
+                { lbl: "دولار", val: `$${dT.usd.toLocaleString()}`, cls: "sd-sum-val--amber" },
+              ].map((a, i) => (
+                <div key={i} className="sd-sum-amount">
+                  <span className="sd-sum-lbl">{a.lbl}</span>
+                  <span className={`sd-sum-val ${a.cls}`}>{a.val}</span>
+                </div>
+              ))}
+            </div>
+            <button
+              className="sd-sum-btn sd-sum-btn--dep"
+              onClick={() => onOpenEntries(session, "deposit")}
+            >
+              <i className="fa-solid fa-table-list" />
+              عرض وإدارة الإيداعات
+              <i
+                className="fa-solid fa-arrow-left"
+                style={{ marginRight: "auto", marginLeft: 0 }}
+              />
+            </button>
+          </div>
+
+          <div className="sd-sum-card sd-sum-card--wth">
+            <div className="sd-sum-card-header">
+              <div className="sd-sum-card-ico sd-sum-card-ico--wth">
+                <i className="fa-solid fa-arrow-up" style={{ fontSize: 16, color: "#dc2626" }} />
+              </div>
+              <div>
+                <div className="sd-sum-card-title">السحوبات</div>
+                <div className="sd-sum-card-count">{wths.length} إدخال</div>
+              </div>
+            </div>
+            <div className="sd-sum-amounts">
+              {[
+                { lbl: "ل.س جديد", val: wT.newSYP.toLocaleString(), cls: "sd-sum-val--red" },
+                { lbl: "ل.س قديم", val: wT.oldSYP.toLocaleString(), cls: "sd-sum-val--orange" },
+                { lbl: "دولار", val: `$${wT.usd.toLocaleString()}`, cls: "sd-sum-val--pink" },
+              ].map((a, i) => (
+                <div key={i} className="sd-sum-amount">
+                  <span className="sd-sum-lbl">{a.lbl}</span>
+                  <span className={`sd-sum-val ${a.cls}`}>{a.val}</span>
+                </div>
+              ))}
+            </div>
+            <button
+              className="sd-sum-btn sd-sum-btn--wth"
+              onClick={() => onOpenEntries(session, "withdrawal")}
+            >
+              <i className="fa-solid fa-table-list" />
+              عرض وإدارة السحوبات
+              <i
+                className="fa-solid fa-arrow-left"
+                style={{ marginRight: "auto", marginLeft: 0 }}
+              />
+            </button>
+          </div>
+        </div>
+
+        <div className="sd-net-card">
+          <div className="sd-net-card-title">
+            <i className="fa-solid fa-scale-balanced" style={{ color: "#818cf8", fontSize: 15 }} />
+            الصافي الإجمالي
+          </div>
+          <div className="sd-net-amounts">
+            {[
+              { lbl: "صافي ل.س جديد", val: nT.newSYP.toLocaleString(), pos: nT.newSYP >= 0 },
+              { lbl: "صافي ل.س قديم", val: nT.oldSYP.toLocaleString(), pos: nT.oldSYP >= 0 },
+              { lbl: "صافي دولار", val: `$${nT.usd.toLocaleString()}`, pos: nT.usd >= 0 },
+            ].map((n, i) => (
+              <div key={i} className="sd-net-amount">
+                <span className="sd-net-amount-lbl">{n.lbl}</span>
+                <span
+                  className={`sd-net-amount-val ${n.pos ? "sd-net-amount-val--pos" : "sd-net-amount-val--neg"}`}
+                >
+                  {n.pos && n.val !== "0" && n.val !== "$0" ? "+" : ""}
+                  {n.val}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="sd-quick-actions">
+          <button
+            className="sd-qa-btn sd-qa-btn--dep"
+            onClick={() => onOpenEntries(session, "deposit")}
+          >
+            <i className="fa-solid fa-plus" />
+            إضافة إيداع
+          </button>
+          <button
+            className="sd-qa-btn sd-qa-btn--wth"
+            onClick={() => onOpenEntries(session, "withdrawal")}
+          >
+            <i className="fa-solid fa-plus" />
+            إضافة سحب
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════
+   ENTRIES PAGE
+════════════════════════════════════════════ */
+function EntriesPage({ session, onBack, defaultTab }) {
   const [entries, setEntries] = useState([]);
   const [reps, setReps] = useState([]);
+  const [tab, setTab] = useState(defaultTab || "deposit");
   const [repId, setRepId] = useState("");
   const [newSYP, setNewSYP] = useState("");
   const [oldSYP, setOldSYP] = useState("");
   const [usd, setUsd] = useState("");
+  const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [editId, setEditId] = useState(null);
   const [editData, setEditData] = useState({});
-  const [showPrint, setShowPrint] = useState(false);
+  const [printDialog, setPrintDialog] = useState(false);
+  const [printMode, setPrintMode] = useState(null);
   const printRef = useRef(null);
   const uid = auth.currentUser?.uid;
 
   useEffect(() => {
     if (!uid || !session) return;
-    const qE = query(
-      collection(db, "users", uid, "sessions", session.id, "entries"),
-      orderBy("createdAt", "asc"),
+    const u1 = onSnapshot(
+      query(
+        collection(db, "users", uid, "sessions", session.id, "entries"),
+        orderBy("createdAt", "asc"),
+      ),
+      (s) => setEntries(s.docs.map((d) => ({ id: d.id, ...d.data() }))),
     );
-    const qR = query(collection(db, "users", uid, "representatives"), orderBy("createdAt", "desc"));
-    const u1 = onSnapshot(qE, (s) => setEntries(s.docs.map((d) => ({ id: d.id, ...d.data() }))));
-    const u2 = onSnapshot(qR, (s) => setReps(s.docs.map((d) => ({ id: d.id, ...d.data() }))));
+    const u2 = onSnapshot(
+      query(collection(db, "users", uid, "representatives"), orderBy("createdAt", "desc")),
+      (s) => setReps(s.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    );
     return () => {
       u1();
       u2();
     };
   }, [session]);
 
-  // مناديب الشركة فقط
   const companyReps = reps.filter((r) => r.companyId === session.companyId);
+  const deps = entries.filter((e) => e.type === "deposit");
+  const wths = entries.filter((e) => e.type === "withdrawal");
+  const shown = tab === "deposit" ? deps : wths;
+  const calc = (arr) => ({
+    newSYP: arr.reduce((a, e) => a + (Number(e.newSYP) || 0), 0),
+    oldSYP: arr.reduce((a, e) => a + (Number(e.oldSYP) || 0), 0),
+    usd: arr.reduce((a, e) => a + (Number(e.usd) || 0), 0),
+  });
+  const curT = calc(shown);
+  const dT = calc(deps);
+  const wT = calc(wths);
+  const nT = { newSYP: dT.newSYP - wT.newSYP, oldSYP: dT.oldSYP - wT.oldSYP, usd: dT.usd - wT.usd };
 
-  const updateSessionTotals = async (newEntries) => {
-    const totalNewSYP = newEntries.reduce((a, e) => a + (Number(e.newSYP) || 0), 0);
-    const totalOldSYP = newEntries.reduce((a, e) => a + (Number(e.oldSYP) || 0), 0);
-    const totalUSD = newEntries.reduce((a, e) => a + (Number(e.usd) || 0), 0);
+  const syncTotals = async (updated) => {
+    const d = calc(updated.filter((e) => e.type === "deposit"));
+    const w = calc(updated.filter((e) => e.type === "withdrawal"));
     await updateDoc(doc(db, "users", uid, "sessions", session.id), {
-      totalNewSYP,
-      totalOldSYP,
-      totalUSD,
-      entriesCount: newEntries.length,
+      totalDepNewSYP: d.newSYP,
+      totalDepOldSYP: d.oldSYP,
+      totalDepUSD: d.usd,
+      totalWthNewSYP: w.newSYP,
+      totalWthOldSYP: w.oldSYP,
+      totalWthUSD: w.usd,
+      entriesCount: updated.length,
     });
   };
 
@@ -420,18 +646,20 @@ function SessionDetail({ session, onBack }) {
     const entry = {
       repId,
       repName: rep?.name || "",
+      type: tab,
       newSYP: Number(newSYP) || 0,
       oldSYP: Number(oldSYP) || 0,
       usd: Number(usd) || 0,
+      note: note.trim(),
       createdAt: Date.now(),
     };
     await addDoc(collection(db, "users", uid, "sessions", session.id, "entries"), entry);
-    const updated = [...entries, entry];
-    await updateSessionTotals(updated);
+    await syncTotals([...entries, entry]);
     setRepId("");
     setNewSYP("");
     setOldSYP("");
     setUsd("");
+    setNote("");
     setLoading(false);
   };
 
@@ -439,7 +667,7 @@ function SessionDetail({ session, onBack }) {
     setDeleting(id);
     await deleteDoc(doc(db, "users", uid, "sessions", session.id, "entries", id));
     const updated = entries.filter((e) => e.id !== id);
-    await updateSessionTotals(updated);
+    await syncTotals(updated);
     setDeleting(null);
   };
 
@@ -448,6 +676,7 @@ function SessionDetail({ session, onBack }) {
       newSYP: Number(editData.newSYP) || 0,
       oldSYP: Number(editData.oldSYP) || 0,
       usd: Number(editData.usd) || 0,
+      note: editData.note || "",
     });
     const updated = entries.map((e) =>
       e.id === id
@@ -460,213 +689,317 @@ function SessionDetail({ session, onBack }) {
           }
         : e,
     );
-    await updateSessionTotals(updated);
+    await syncTotals(updated);
     setEditId(null);
   };
 
-  const totals = {
-    newSYP: entries.reduce((a, e) => a + (Number(e.newSYP) || 0), 0),
-    oldSYP: entries.reduce((a, e) => a + (Number(e.oldSYP) || 0), 0),
-    usd: entries.reduce((a, e) => a + (Number(e.usd) || 0), 0),
-  };
-
-  const handlePrint = () => {
-    const printContent = printRef.current.innerHTML;
-    const w = window.open("", "_blank");
-    w.document.write(`
-      <!DOCTYPE html>
-      <html dir="rtl" lang="ar">
-      <head>
+  const handlePrint = (mode) => {
+    setPrintMode(mode);
+    setTimeout(() => {
+      const content = printRef.current?.innerHTML || "";
+      const w = window.open("", "_blank");
+      w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head>
         <meta charset="UTF-8">
-        <title>تقرير جلسة — ${session.label}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>تقرير — ${session.label}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
         <style>
           *{margin:0;padding:0;box-sizing:border-box;}
-          body{font-family:'Tajawal',sans-serif;direction:rtl;padding:32px;color:#1e293b;background:#fff;}
-          .print-header{text-align:center;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #e2e8f0;}
-          .print-logo{font-size:28px;font-weight:900;color:#1e1b4b;margin-bottom:6px;}
-          .print-sub{font-size:14px;color:#64748b;}
-          .print-info{display:flex;justify-content:space-between;margin-bottom:24px;gap:16px;}
-          .print-info-item{background:#f8fafc;padding:12px 16px;border-radius:10px;flex:1;}
-          .print-info-label{font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;}
-          .print-info-val{font-size:15px;font-weight:700;color:#1e293b;}
-          table{width:100%;border-collapse:collapse;margin-bottom:24px;}
-          th{background:#1e1b4b;color:#fff;padding:11px 14px;font-size:13px;font-weight:700;text-align:right;}
-          td{padding:10px 14px;font-size:13px;border-bottom:1px solid #f1f5f9;color:#374151;}
-          tr:hover td{background:#f8fafc;}
-          tr:nth-child(even) td{background:#fafafa;}
-          .totals-row td{font-weight:800;background:#1e1b4b!important;color:#fff!important;font-size:14px;}
-          .print-summary{display:flex;gap:12px;margin-bottom:20px;}
-          .sum-box{flex:1;padding:16px;border-radius:12px;text-align:center;}
-          .sum-box--purple{background:#f5f3ff;border:1px solid #ddd6fe;}
-          .sum-box--teal{background:#f0fdf4;border:1px solid #bbf7d0;}
-          .sum-box--amber{background:#fffbeb;border:1px solid #fde68a;}
-          .sum-label{font-size:12px;color:#64748b;font-weight:600;margin-bottom:4px;}
-          .sum-val{font-size:20px;font-weight:900;color:#1e293b;}
-          .print-footer{text-align:center;margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:12px;color:#94a3b8;}
-          @media print{body{padding:16px;}}
+          html,body{font-family:'Tajawal',sans-serif;direction:rtl;background:#fff;color:#0f172a;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+
+          /* ── page wrapper ── */
+          .page{max-width:210mm;margin:0 auto;padding:28px 32px;}
+
+          /* ── header ── */
+          .ph{
+            display:flex;align-items:center;justify-content:space-between;
+            margin-bottom:28px;padding-bottom:20px;
+            border-bottom:2px solid #e2e8f0;
+          }
+          .ph-brand{display:flex;align-items:center;gap:12px;}
+          .ph-brand-ico{
+            width:44px;height:44px;border-radius:12px;
+            background:linear-gradient(135deg,#1e1b4b,#3730a3);
+            display:flex;align-items:center;justify-content:center;
+            font-size:20px;color:#fff;flex-shrink:0;
+          }
+          .ph-brand-name{font-size:20px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;}
+          .ph-brand-sub{font-size:11px;color:#64748b;font-weight:400;margin-top:1px;}
+          .ph-badge{
+            padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;
+          }
+          .ph-badge--dep{background:#f0fdf4;color:#059669;border:1px solid #bbf7d0;}
+          .ph-badge--wth{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}
+          .ph-badge--all{background:#f5f3ff;color:#4f46e5;border:1px solid #ddd6fe;}
+
+          /* ── meta info cards ── */
+          .pi{display:flex;gap:8px;margin-bottom:20px;}
+          .pi-card{flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;}
+          .pi-lbl{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;}
+          .pi-val{font-size:14px;font-weight:800;color:#0f172a;}
+
+          /* ── summary boxes ── */
+          .ps-section{margin-bottom:20px;}
+          .ps-section-title{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;}
+          .ps-grid{display:flex;gap:8px;}
+          .ps-box{flex:1;padding:14px 16px;border-radius:12px;display:flex;flex-direction:column;gap:3px;}
+          .ps-box--dep{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;}
+          .ps-box--wth{background:linear-gradient(135deg,#fef2f2,#fee2e2);border:1px solid #fca5a5;}
+          .ps-box--net{background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:1px solid #c4b5fd;}
+          .ps-lbl{font-size:10px;font-weight:600;color:#475569;}
+          .ps-val{font-size:18px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;}
+          .ps-sub{font-size:9px;color:#94a3b8;font-weight:500;}
+
+          /* ── section divider ── */
+          .sec-hdr{
+            display:flex;align-items:center;gap:10px;
+            margin:24px 0 12px;
+          }
+          .sec-hdr-bar{width:4px;height:18px;border-radius:2px;flex-shrink:0;}
+          .sec-hdr-bar--dep{background:linear-gradient(180deg,#059669,#10b981);}
+          .sec-hdr-bar--wth{background:linear-gradient(180deg,#dc2626,#ef4444);}
+          .sec-hdr-title{font-size:14px;font-weight:800;color:#0f172a;}
+          .sec-hdr-count{
+            margin-right:4px;padding:2px 10px;border-radius:99px;
+            font-size:11px;font-weight:700;
+          }
+          .sec-hdr-count--dep{background:#dcfce7;color:#059669;}
+          .sec-hdr-count--wth{background:#fee2e2;color:#dc2626;}
+
+          /* ── table ── */
+          .tbl-wrap{border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;margin-bottom:8px;}
+          table{width:100%;border-collapse:collapse;}
+          thead tr{background:linear-gradient(135deg,#1e1b4b,#312e81);}
+          th{padding:10px 13px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.9);text-align:right;white-space:nowrap;letter-spacing:0.3px;}
+          td{padding:9px 13px;font-size:12px;border-bottom:1px solid #f1f5f9;color:#334155;vertical-align:middle;}
+          tr:last-child td{border-bottom:none;}
+          tbody tr:nth-child(even) td{background:#fafafa;}
+          .dep-row td:first-child{border-right:3px solid #10b981;}
+          .wth-row td:first-child{border-right:3px solid #ef4444;}
+
+          /* ── rep cell ── */
+          .rep-cell{display:flex;align-items:center;gap:8px;}
+          .rep-ava{
+            width:26px;height:26px;border-radius:7px;flex-shrink:0;
+            display:flex;align-items:center;justify-content:center;
+            font-size:11px;font-weight:800;color:#fff;
+          }
+          .rep-ava--dep{background:linear-gradient(135deg,#059669,#34d399);}
+          .rep-ava--wth{background:linear-gradient(135deg,#dc2626,#f87171);}
+          .rep-name{font-size:12px;font-weight:700;color:#0f172a;}
+
+          /* ── amount badges ── */
+          .amt{display:inline-flex;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:700;white-space:nowrap;}
+          .amt--purple{background:#f5f3ff;color:#4f46e5;}
+          .amt--teal{background:#f0fdf4;color:#059669;}
+          .amt--amber{background:#fffbeb;color:#d97706;}
+          .amt--red{background:#fef2f2;color:#dc2626;}
+          .amt--orange{background:#fff7ed;color:#ea580c;}
+          .amt--pink{background:#fdf2f8;color:#be185d;}
+          .note-cell{font-size:11px;color:#94a3b8;font-style:italic;}
+
+          /* ── totals row ── */
+          .tot-row td{
+            font-weight:800;font-size:13px;
+            background:linear-gradient(135deg,#f8fafc,#f1f5f9) !important;
+            border-top:2px solid #e2e8f0;
+          }
+          .tot-label{font-size:12px;font-weight:800;color:#0f172a;}
+
+          /* ── net summary at bottom ── */
+          .net-section{
+            margin-top:20px;padding:16px 20px;
+            background:linear-gradient(135deg,#f5f3ff,#ede9fe);
+            border:1px solid #c4b5fd;border-radius:14px;
+            display:flex;align-items:center;gap:20px;
+          }
+          .net-section-title{font-size:12px;font-weight:700;color:#4f46e5;white-space:nowrap;}
+          .net-items{display:flex;gap:20px;flex:1;flex-wrap:wrap;}
+          .net-item{display:flex;flex-direction:column;gap:2px;}
+          .net-lbl{font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;}
+          .net-val{font-size:16px;font-weight:900;letter-spacing:-0.5px;}
+          .net-val--pos{color:#059669;}
+          .net-val--neg{color:#dc2626;}
+          .net-val--zero{color:#94a3b8;}
+
+          /* ── footer ── */
+          .pf{
+            margin-top:28px;padding-top:16px;
+            border-top:1px solid #e2e8f0;
+            display:flex;align-items:center;justify-content:space-between;
+          }
+          .pf-left{font-size:11px;color:#94a3b8;}
+          .pf-right{font-size:11px;color:#94a3b8;font-weight:500;}
+
+          @media print{
+            body{padding:0;}
+            .page{padding:16px 20px;max-width:100%;}
+            @page{margin:1cm;size:A4;}
+          }
         </style>
-      </head>
-      <body>${printContent}</body>
-      </html>
-    `);
-    w.document.close();
-    setTimeout(() => {
-      w.print();
-      w.close();
-    }, 400);
+      </head><body>${content}</body></html>`);
+      w.document.close();
+      setTimeout(() => {
+        w.print();
+        w.close();
+        setPrintMode(null);
+      }, 500);
+    }, 150);
   };
 
-  const handleExportCSV = () => {
-    const headers = ["المندوب", "ل.س جديد", "ل.س قديم", "دولار"];
-    const rows = entries.map((e) => [e.repName, e.newSYP || 0, e.oldSYP || 0, e.usd || 0]);
-    rows.push(["الإجمالي", totals.newSYP, totals.oldSYP, totals.usd]);
-    const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `جلسة_${session.label}_${session.date}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const pRows = !printMode
+    ? []
+    : printMode === "all"
+      ? entries
+      : entries.filter((e) => e.type === printMode);
+  const pDeps = pRows.filter((e) => e.type === "deposit");
+  const pWths = pRows.filter((e) => e.type === "withdrawal");
+  const pDT = calc(pDeps);
+  const pWT = calc(pWths);
+  const pNT = {
+    newSYP: pDT.newSYP - pWT.newSYP,
+    oldSYP: pDT.oldSYP - pWT.oldSYP,
+    usd: pDT.usd - pWT.usd,
+  };
+
+  const fmtNet = (val, prefix = "") => {
+    const s = val.toLocaleString();
+    if (val > 0) return `+${prefix}${s}`;
+    return `${prefix}${s}`;
   };
 
   return (
-    <div className="sd-root">
-      {/* Header */}
-      <div className="sd-header">
-        <div className="sd-header-bg" />
-        <div className="sd-header-body">
-          <div className="sd-header-top">
-            <button className="sd-back-btn" onClick={onBack}>
-              <i className="fa-solid fa-arrow-right" />
-              العودة
-            </button>
-            <div className="sd-header-actions">
-              <button className="sd-action-btn sd-action-btn--csv" onClick={handleExportCSV}>
-                <i className="fa-solid fa-file-csv" />
-                <span>CSV</span>
-              </button>
-              <button className="sd-action-btn sd-action-btn--print" onClick={handlePrint}>
-                <i className="fa-solid fa-print" />
-                <span>طباعة</span>
-              </button>
-            </div>
+    <div className="ep-root">
+      {/* ── Header ── */}
+      <div className="ep-header">
+        <div className="ep-hbg" />
+        <div className="ep-htop">
+          <button className="back-btn" onClick={onBack}>
+            <i className="fa-solid fa-arrow-right" />
+            العودة للملخص
+          </button>
+          <button className="ep-print-btn" onClick={() => setPrintDialog(true)}>
+            <i className="fa-solid fa-print" />
+            طباعة
+          </button>
+        </div>
+        <div className="ep-hinfo">
+          <div className="ep-hico">
+            <i className="fa-solid fa-table-list" style={{ fontSize: 16, color: "#fff" }} />
           </div>
-          <div className="sd-header-info">
-            <div className="sd-header-ico">
-              <i className="fa-solid fa-folder-open" style={{ fontSize: 20, color: "#fff" }} />
-            </div>
-            <div>
-              <h1 className="sd-header-title">{session.label}</h1>
-              <div className="sd-header-meta">
-                <span>
-                  <i className="fa-solid fa-building" style={{ fontSize: 10 }} />{" "}
-                  {session.companyName}
-                </span>
-                <span>
-                  <i className="fa-regular fa-calendar" style={{ fontSize: 10 }} /> {session.date}
-                </span>
-                <span>
-                  <i className="fa-solid fa-list" style={{ fontSize: 10 }} /> {entries.length} إدخال
-                </span>
-              </div>
+          <div>
+            <h1 className="ep-htitle">{session.label}</h1>
+            <div className="ep-hmeta">
+              <span>
+                <i className="fa-solid fa-building" style={{ fontSize: 10 }} />
+                {session.companyName}
+              </span>
+              <span>
+                <i className="fa-regular fa-calendar" style={{ fontSize: 10 }} />
+                {session.date}
+              </span>
             </div>
           </div>
         </div>
-
-        {/* Totals bar */}
-        <div className="sd-totals-bar">
-          <div className="sd-total-chip sd-total-chip--purple">
-            <div className="sd-total-chip-ico">
-              <i
-                className="fa-solid fa-money-bill-wave"
-                style={{ fontSize: 14, color: "#818cf8" }}
-              />
+        <div className="ep-net-bar">
+          {[
+            { lbl: "صافي ل.س جديد", val: nT.newSYP.toLocaleString(), pos: nT.newSYP >= 0 },
+            { lbl: "صافي ل.س قديم", val: nT.oldSYP.toLocaleString(), pos: nT.oldSYP >= 0 },
+            { lbl: "صافي دولار", val: `$${nT.usd.toLocaleString()}`, pos: nT.usd >= 0 },
+            { lbl: "إيداع / سحب", val: `${deps.length} / ${wths.length}`, neutral: true },
+          ].map((n, i) => (
+            <div key={i} className="ep-net-chip">
+              <div className="ep-net-lbl">{n.lbl}</div>
+              <div
+                className={`ep-net-val ${n.neutral ? "" : "ep-net-val--" + (n.pos ? "pos" : "neg")}`}
+              >
+                {n.val}
+              </div>
             </div>
-            <div>
-              <div className="sd-total-chip-lbl">ل.س جديد</div>
-              <div className="sd-total-chip-val">{totals.newSYP.toLocaleString()}</div>
-            </div>
-          </div>
-          <div className="sd-total-chip sd-total-chip--teal">
-            <div className="sd-total-chip-ico">
-              <i className="fa-solid fa-money-bill" style={{ fontSize: 14, color: "#34d399" }} />
-            </div>
-            <div>
-              <div className="sd-total-chip-lbl">ل.س قديم</div>
-              <div className="sd-total-chip-val">{totals.oldSYP.toLocaleString()}</div>
-            </div>
-          </div>
-          <div className="sd-total-chip sd-total-chip--amber">
-            <div className="sd-total-chip-ico">
-              <i className="fa-solid fa-dollar-sign" style={{ fontSize: 14, color: "#fbbf24" }} />
-            </div>
-            <div>
-              <div className="sd-total-chip-lbl">دولار</div>
-              <div className="sd-total-chip-val">${totals.usd.toLocaleString()}</div>
-            </div>
-          </div>
-          <div className="sd-total-chip sd-total-chip--blue">
-            <div className="sd-total-chip-ico">
-              <i className="fa-solid fa-users" style={{ fontSize: 14, color: "#60a5fa" }} />
-            </div>
-            <div>
-              <div className="sd-total-chip-lbl">المناديب</div>
-              <div className="sd-total-chip-val">{entries.length}</div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      <div className="sd-body">
-        {/* Add entry form */}
-        <div className="sd-add-card">
-          <div className="sd-add-title">
-            <i className="fa-solid fa-plus-circle" style={{ color: "#059669", fontSize: 15 }} />
-            تسجيل استلام جديد
+      {/* ── Body ── */}
+      <div className="ep-body">
+        {/* Tabs */}
+        <div className="ep-tabs">
+          <button
+            className={`ep-tab ${tab === "deposit" ? "ep-tab--dep" : ""}`}
+            onClick={() => setTab("deposit")}
+          >
+            <i className="fa-solid fa-arrow-down" />
+            إيداع
+            <span className={`ep-tab-badge ${tab === "deposit" ? "ep-tab-badge--on-dep" : ""}`}>
+              {deps.length}
+            </span>
+          </button>
+          <button
+            className={`ep-tab ${tab === "withdrawal" ? "ep-tab--wth" : ""}`}
+            onClick={() => setTab("withdrawal")}
+          >
+            <i className="fa-solid fa-arrow-up" />
+            سحب
+            <span className={`ep-tab-badge ${tab === "withdrawal" ? "ep-tab-badge--on-wth" : ""}`}>
+              {wths.length}
+            </span>
+          </button>
+        </div>
+
+        {/* Form */}
+        <div
+          className={`ep-form-card ${tab === "deposit" ? "ep-form-card--dep" : "ep-form-card--wth"}`}
+        >
+          <div className="ep-form-title">
+            <i
+              className={`fa-solid fa-${tab === "deposit" ? "arrow-down" : "arrow-up"}`}
+              style={{ color: tab === "deposit" ? "#059669" : "#ef4444" }}
+            />
+            {tab === "deposit" ? "تسجيل إيداع جديد" : "تسجيل سحب جديد"}
           </div>
           {companyReps.length === 0 ? (
-            <div className="sd-warn">
+            <div className="warn-box">
               <i className="fa-solid fa-triangle-exclamation" />
-              لا يوجد مناديب مرتبطون بهذه الشركة. أضف مناديب أولاً.
+              لا يوجد مناديب لهذه الشركة
             </div>
           ) : (
-            <form onSubmit={handleAdd} className="sd-add-form">
-              {/* Rep */}
-              <div className="sd-field">
-                <label className="sd-label">
-                  <i className="fa-solid fa-user" style={{ fontSize: 10, color: "#6ee7b7" }} />
-                  المندوب
-                </label>
-                <div className="sd-select-wrap">
-                  <i className="fa-solid fa-user sd-input-ico" />
-                  <select
-                    className="sd-select"
-                    value={repId}
-                    onChange={(e) => setRepId(e.target.value)}
-                    required
+            <form onSubmit={handleAdd}>
+              <div className="ep-form-grid">
+                <div className="ep-field">
+                  <label className="ep-lbl">
+                    <i className="fa-solid fa-user" />
+                    المندوب
+                  </label>
+                  <div
+                    className={`ep-inp-wrap ${tab === "deposit" ? "ep-inp-wrap--dep" : "ep-inp-wrap--wth"}`}
                   >
-                    <option value="">اختر المندوب...</option>
-                    {companyReps.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}
-                      </option>
-                    ))}
-                  </select>
+                    <i className="fa-solid fa-user ep-ico" />
+                    <select
+                      className="ep-inp"
+                      value={repId}
+                      onChange={(e) => setRepId(e.target.value)}
+                      required
+                      style={{ appearance: "none", cursor: "pointer", paddingRight: 34 }}
+                    >
+                      <option value="">اختر المندوب...</option>
+                      {companyReps.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
-
-              {/* Currencies */}
-              <div className="sd-currencies">
-                <div className="sd-field">
-                  <label className="sd-label">
-                    <span className="sd-cur-dot sd-cur-dot--purple" />
+                <div className="ep-field">
+                  <label className="ep-lbl">
+                    <span className="dot dot--purple" />
                     ل.س جديد
                   </label>
-                  <div className="sd-input-wrap sd-input-wrap--purple">
+                  <div
+                    className={`ep-inp-wrap ${tab === "deposit" ? "ep-inp-wrap--purple" : "ep-inp-wrap--red"}`}
+                  >
                     <input
-                      className="sd-input"
+                      className="ep-inp"
                       type="number"
                       min="0"
                       placeholder="0"
@@ -675,14 +1008,16 @@ function SessionDetail({ session, onBack }) {
                     />
                   </div>
                 </div>
-                <div className="sd-field">
-                  <label className="sd-label">
-                    <span className="sd-cur-dot sd-cur-dot--teal" />
+                <div className="ep-field">
+                  <label className="ep-lbl">
+                    <span className="dot dot--teal" />
                     ل.س قديم
                   </label>
-                  <div className="sd-input-wrap sd-input-wrap--teal">
+                  <div
+                    className={`ep-inp-wrap ${tab === "deposit" ? "ep-inp-wrap--teal" : "ep-inp-wrap--orange"}`}
+                  >
                     <input
-                      className="sd-input"
+                      className="ep-inp"
                       type="number"
                       min="0"
                       placeholder="0"
@@ -691,14 +1026,16 @@ function SessionDetail({ session, onBack }) {
                     />
                   </div>
                 </div>
-                <div className="sd-field">
-                  <label className="sd-label">
-                    <span className="sd-cur-dot sd-cur-dot--amber" />
+                <div className="ep-field">
+                  <label className="ep-lbl">
+                    <span className="dot dot--amber" />
                     دولار
                   </label>
-                  <div className="sd-input-wrap sd-input-wrap--amber">
+                  <div
+                    className={`ep-inp-wrap ${tab === "deposit" ? "ep-inp-wrap--amber" : "ep-inp-wrap--pink"}`}
+                  >
                     <input
-                      className="sd-input"
+                      className="ep-inp"
                       type="number"
                       min="0"
                       placeholder="0"
@@ -707,72 +1044,136 @@ function SessionDetail({ session, onBack }) {
                     />
                   </div>
                 </div>
+                <div className="ep-field ep-field--note">
+                  <label className="ep-lbl">
+                    <i className="fa-regular fa-note-sticky" />
+                    ملاحظة
+                  </label>
+                  <div className="ep-inp-wrap">
+                    <input
+                      className="ep-inp"
+                      placeholder="اختياري..."
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="ep-field ep-field--submit">
+                  <label className="ep-lbl" style={{ opacity: 0 }}>
+                    _
+                  </label>
+                  <button
+                    type="submit"
+                    className={`ep-submit ${tab === "deposit" ? "ep-submit--dep" : "ep-submit--wth"}`}
+                    disabled={loading || !repId}
+                  >
+                    {loading ? (
+                      <>
+                        <Spin />
+                        ...
+                      </>
+                    ) : (
+                      <>
+                        <i
+                          className={`fa-solid fa-${tab === "deposit" ? "arrow-down" : "arrow-up"}`}
+                        />
+                        تسجيل
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-
-              <button type="submit" className="sd-submit-btn" disabled={loading || !repId}>
-                {loading ? (
-                  <>
-                    <div className="sd-spinner" />
-                    جاري التسجيل...
-                  </>
-                ) : (
-                  <>
-                    <i className="fa-solid fa-plus" />
-                    تسجيل الاستلام
-                  </>
-                )}
-              </button>
             </form>
           )}
         </div>
 
-        {/* Entries table */}
-        {entries.length === 0 ? (
-          <div className="sd-empty">
-            <div className="sd-empty-ico">
-              <i className="fa-solid fa-inbox" style={{ fontSize: 32, color: "#86efac" }} />
-            </div>
-            <div className="sd-empty-title">لا توجد إدخالات بعد</div>
-            <div className="sd-empty-sub">سجّل أول استلام من الحقل أعلاه</div>
+        {/* Totals strip */}
+        {shown.length > 0 && (
+          <div className="ep-totals-strip">
+            {[
+              {
+                lbl: "ل.س جديد",
+                val: curT.newSYP.toLocaleString(),
+                cls: tab === "deposit" ? "et--purple" : "et--red",
+              },
+              {
+                lbl: "ل.س قديم",
+                val: curT.oldSYP.toLocaleString(),
+                cls: tab === "deposit" ? "et--teal" : "et--orange",
+              },
+              {
+                lbl: "دولار",
+                val: `$${curT.usd.toLocaleString()}`,
+                cls: tab === "deposit" ? "et--amber" : "et--pink",
+              },
+              { lbl: "إدخالات", val: shown.length, cls: "et--neutral" },
+            ].map((t, i) => (
+              <div key={i} className={`ep-total-chip ${t.cls}`}>
+                <span className="ep-total-lbl">{t.lbl}</span>
+                <span className="ep-total-val">{t.val}</span>
+              </div>
+            ))}
           </div>
+        )}
+
+        {/* Table */}
+        {shown.length === 0 ? (
+          <Empty
+            icon={`fa-solid fa-${tab === "deposit" ? "arrow-down" : "arrow-up"}`}
+            title={`لا توجد ${tab === "deposit" ? "إيداعات" : "سحوبات"} بعد`}
+            sub={`سجّل أول ${tab === "deposit" ? "إيداع" : "سحب"} من الحقل أعلاه`}
+            color={tab === "deposit" ? "#86efac" : "#fca5a5"}
+          />
         ) : (
-          <div className="sd-table-card">
-            <div className="sd-table-header">
-              <div className="sd-table-title">
-                <i className="fa-solid fa-table-list" style={{ color: "#059669", fontSize: 15 }} />
-                سجل الاستلام
-                <span className="sd-table-count">{entries.length}</span>
+          <div className="ep-table-section">
+            <div className="ep-table-title-row">
+              <div className="ep-table-title">
+                <i
+                  className={`fa-solid fa-${tab === "deposit" ? "arrow-down" : "arrow-up"}`}
+                  style={{ color: tab === "deposit" ? "#059669" : "#ef4444" }}
+                />
+                {tab === "deposit" ? "سجل الإيداعات" : "سجل السحوبات"}
+                <span
+                  className={`tbl-badge ${tab === "deposit" ? "tbl-badge--dep" : "tbl-badge--wth"}`}
+                >
+                  {shown.length}
+                </span>
               </div>
             </div>
-
-            {/* Table */}
-            <div className="sd-table-wrap">
-              <table className="sd-table">
+            <div className="ep-tbl-outer">
+              <table className="ep-tbl">
                 <thead>
                   <tr>
-                    <th>#</th>
+                    <th style={{ width: 36 }}>#</th>
                     <th>المندوب</th>
                     <th>ل.س جديد</th>
                     <th>ل.س قديم</th>
                     <th>دولار</th>
-                    <th>إجراءات</th>
+                    <th>ملاحظة</th>
+                    <th style={{ width: 80 }}>إجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {entries.map((e, i) => (
-                    <tr key={e.id} className="sd-tr" style={{ animationDelay: `${i * 0.04}s` }}>
-                      <td className="sd-td-num">{i + 1}</td>
+                  {shown.map((e, i) => (
+                    <tr
+                      key={e.id}
+                      className={`ep-tr ep-tr--${tab === "deposit" ? "dep" : "wth"}`}
+                      style={{ animationDelay: `${i * 0.03}s` }}
+                    >
+                      <td className="td-num">{i + 1}</td>
                       <td>
-                        <div className="sd-td-rep">
-                          <div className="sd-td-ava">{e.repName?.charAt(0) || "؟"}</div>
-                          <span className="sd-td-rep-name">{e.repName}</span>
+                        <div className="td-rep">
+                          <div className={`td-ava td-ava--${tab === "deposit" ? "dep" : "wth"}`}>
+                            {e.repName?.charAt(0) || "؟"}
+                          </div>
+                          <span className="td-name">{e.repName}</span>
                         </div>
                       </td>
                       {editId === e.id ? (
                         <>
                           <td>
                             <input
-                              className="sd-edit-inp sd-edit-inp--purple"
+                              className="td-edit td-edit--purple"
                               type="number"
                               value={editData.newSYP}
                               onChange={(v) =>
@@ -782,7 +1183,7 @@ function SessionDetail({ session, onBack }) {
                           </td>
                           <td>
                             <input
-                              className="sd-edit-inp sd-edit-inp--teal"
+                              className="td-edit td-edit--teal"
                               type="number"
                               value={editData.oldSYP}
                               onChange={(v) =>
@@ -792,44 +1193,61 @@ function SessionDetail({ session, onBack }) {
                           </td>
                           <td>
                             <input
-                              className="sd-edit-inp sd-edit-inp--amber"
+                              className="td-edit td-edit--amber"
                               type="number"
                               value={editData.usd}
                               onChange={(v) => setEditData((p) => ({ ...p, usd: v.target.value }))}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              className="td-edit"
+                              value={editData.note || ""}
+                              onChange={(v) => setEditData((p) => ({ ...p, note: v.target.value }))}
+                              placeholder="ملاحظة"
                             />
                           </td>
                         </>
                       ) : (
                         <>
                           <td>
-                            <span className="sd-amount sd-amount--purple">
+                            <span
+                              className={`tbl-amt tbl-amt--${tab === "deposit" ? "purple" : "red"}`}
+                            >
                               {(e.newSYP || 0).toLocaleString()}
                             </span>
                           </td>
                           <td>
-                            <span className="sd-amount sd-amount--teal">
+                            <span
+                              className={`tbl-amt tbl-amt--${tab === "deposit" ? "teal" : "orange"}`}
+                            >
                               {(e.oldSYP || 0).toLocaleString()}
                             </span>
                           </td>
                           <td>
-                            <span className="sd-amount sd-amount--amber">
+                            <span
+                              className={`tbl-amt tbl-amt--${tab === "deposit" ? "amber" : "pink"}`}
+                            >
                               ${(e.usd || 0).toLocaleString()}
                             </span>
+                          </td>
+                          <td>
+                            <span className="td-note">{e.note || "—"}</span>
                           </td>
                         </>
                       )}
                       <td>
-                        <div className="sd-td-actions">
+                        <div className="td-acts">
                           {editId === e.id ? (
                             <>
                               <button
-                                className="sd-act-btn sd-act-btn--save"
+                                className="act-btn act-btn--save"
                                 onClick={() => handleEdit(e.id)}
                               >
                                 <i className="fa-solid fa-check" />
                               </button>
                               <button
-                                className="sd-act-btn sd-act-btn--cancel"
+                                className="act-btn act-btn--cancel"
                                 onClick={() => setEditId(null)}
                               >
                                 <i className="fa-solid fa-xmark" />
@@ -838,25 +1256,26 @@ function SessionDetail({ session, onBack }) {
                           ) : (
                             <>
                               <button
-                                className="sd-act-btn sd-act-btn--edit"
+                                className="act-btn act-btn--edit"
                                 onClick={() => {
                                   setEditId(e.id);
                                   setEditData({
                                     newSYP: e.newSYP || 0,
                                     oldSYP: e.oldSYP || 0,
                                     usd: e.usd || 0,
+                                    note: e.note || "",
                                   });
                                 }}
                               >
                                 <i className="fa-solid fa-pen" />
                               </button>
                               <button
-                                className="sd-act-btn sd-act-btn--del"
+                                className="act-btn act-btn--del"
                                 onClick={() => handleDelete(e.id)}
                                 disabled={deleting === e.id}
                               >
                                 {deleting === e.id ? (
-                                  <div className="sd-spinner sd-spinner--sm" />
+                                  <Spin red sm />
                                 ) : (
                                   <i className="fa-solid fa-trash" />
                                 )}
@@ -869,106 +1288,414 @@ function SessionDetail({ session, onBack }) {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="sd-tfoot-row">
-                    <td colSpan="2" className="sd-tfoot-label">
-                      <i className="fa-solid fa-sigma" style={{ marginLeft: 6 }} />
+                  <tr className="ep-tfoot">
+                    <td colSpan="2" className="ep-tfoot-lbl">
+                      <i className="fa-solid fa-sigma" style={{ marginLeft: 5 }} />
                       الإجمالي
                     </td>
                     <td>
-                      <span className="sd-amount sd-amount--purple sd-amount--bold">
-                        {totals.newSYP.toLocaleString()}
+                      <span
+                        className={`tbl-amt tbl-amt--bold tbl-amt--${tab === "deposit" ? "purple" : "red"}`}
+                      >
+                        {curT.newSYP.toLocaleString()}
                       </span>
                     </td>
                     <td>
-                      <span className="sd-amount sd-amount--teal  sd-amount--bold">
-                        {totals.oldSYP.toLocaleString()}
+                      <span
+                        className={`tbl-amt tbl-amt--bold tbl-amt--${tab === "deposit" ? "teal" : "orange"}`}
+                      >
+                        {curT.oldSYP.toLocaleString()}
                       </span>
                     </td>
                     <td>
-                      <span className="sd-amount sd-amount--amber sd-amount--bold">
-                        ${totals.usd.toLocaleString()}
+                      <span
+                        className={`tbl-amt tbl-amt--bold tbl-amt--${tab === "deposit" ? "amber" : "pink"}`}
+                      >
+                        ${curT.usd.toLocaleString()}
                       </span>
                     </td>
-                    <td></td>
+                    <td colSpan="2"></td>
                   </tr>
                 </tfoot>
               </table>
             </div>
           </div>
         )}
+        <div style={{ height: 40 }} />
       </div>
 
-      {/* Hidden print template */}
+      {/* ════ PRINT DIALOG ════ */}
+      {printDialog && (
+        <div className="pd-overlay" onClick={() => setPrintDialog(false)}>
+          <div className="pd-box" onClick={(e) => e.stopPropagation()}>
+            <div className="pd-header">
+              <div className="pd-header-ico">
+                <i className="fa-solid fa-print" style={{ fontSize: 18, color: "#4f46e5" }} />
+              </div>
+              <div>
+                <div className="pd-title">اختر ما تريد طباعته</div>
+                <div className="pd-subtitle">سيتم فتح نافذة الطباعة مباشرة</div>
+              </div>
+            </div>
+
+            <div className="pd-options">
+              <button
+                className="pd-opt pd-opt--dep"
+                onClick={() => {
+                  setPrintDialog(false);
+                  handlePrint("deposit");
+                }}
+              >
+                <div className="pd-opt-ico pd-opt-ico--dep">
+                  <i
+                    className="fa-solid fa-arrow-down"
+                    style={{ fontSize: 18, color: "#059669" }}
+                  />
+                </div>
+                <div className="pd-opt-body">
+                  <span className="pd-opt-title">الإيداعات فقط</span>
+                  <span className="pd-opt-desc">
+                    {deps.length} إدخال · ل.س جديد: {dT.newSYP.toLocaleString()} · ل.س قديم:{" "}
+                    {dT.oldSYP.toLocaleString()} · ${dT.usd.toLocaleString()}
+                  </span>
+                </div>
+                <i className="fa-solid fa-chevron-left pd-opt-arrow" />
+              </button>
+
+              <button
+                className="pd-opt pd-opt--wth"
+                onClick={() => {
+                  setPrintDialog(false);
+                  handlePrint("withdrawal");
+                }}
+              >
+                <div className="pd-opt-ico pd-opt-ico--wth">
+                  <i className="fa-solid fa-arrow-up" style={{ fontSize: 18, color: "#dc2626" }} />
+                </div>
+                <div className="pd-opt-body">
+                  <span className="pd-opt-title">السحوبات فقط</span>
+                  <span className="pd-opt-desc">
+                    {wths.length} إدخال · ل.س جديد: {wT.newSYP.toLocaleString()} · ل.س قديم:{" "}
+                    {wT.oldSYP.toLocaleString()} · ${wT.usd.toLocaleString()}
+                  </span>
+                </div>
+                <i className="fa-solid fa-chevron-left pd-opt-arrow" />
+              </button>
+
+              <button
+                className="pd-opt pd-opt--all"
+                onClick={() => {
+                  setPrintDialog(false);
+                  handlePrint("all");
+                }}
+              >
+                <div className="pd-opt-ico pd-opt-ico--all">
+                  <i
+                    className="fa-solid fa-layer-group"
+                    style={{ fontSize: 18, color: "#4f46e5" }}
+                  />
+                </div>
+                <div className="pd-opt-body">
+                  <span className="pd-opt-title">الإيداعات والسحوبات معاً</span>
+                  <span className="pd-opt-desc">
+                    {entries.length} إدخال إجمالاً · الصافي: {nT.newSYP.toLocaleString()} /{" "}
+                    {nT.oldSYP.toLocaleString()} / ${nT.usd.toLocaleString()}
+                  </span>
+                </div>
+                <i className="fa-solid fa-chevron-left pd-opt-arrow" />
+              </button>
+            </div>
+
+            <button className="pd-cancel" onClick={() => setPrintDialog(false)}>
+              <i className="fa-solid fa-xmark" />
+              إلغاء
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ════ PRINT TEMPLATE ════ */}
       <div style={{ display: "none" }}>
         <div ref={printRef}>
-          <div className="print-header">
-            <div className="print-logo">مساعد الصندوق</div>
-            <div className="print-sub">تقرير جلسة استلام الأموال</div>
-          </div>
-          <div className="print-info">
-            <div className="print-info-item">
-              <div className="print-info-label">اسم الجلسة</div>
-              <div className="print-info-val">{session.label}</div>
+          <div className="page">
+            {/* Header */}
+            <div className="ph">
+              <div className="ph-brand">
+                <div className="ph-brand-ico">💼</div>
+                <div>
+                  <div className="ph-brand-name">مساعد الصندوق</div>
+                  <div className="ph-brand-sub">نظام إدارة الإيرادات المتكامل</div>
+                </div>
+              </div>
+              <div
+                className={`ph-badge ${printMode === "deposit" ? "ph-badge--dep" : printMode === "withdrawal" ? "ph-badge--wth" : "ph-badge--all"}`}
+              >
+                {printMode === "deposit"
+                  ? "تقرير الإيداعات"
+                  : printMode === "withdrawal"
+                    ? "تقرير السحوبات"
+                    : "تقرير شامل"}
+              </div>
             </div>
-            <div className="print-info-item">
-              <div className="print-info-label">الشركة</div>
-              <div className="print-info-val">{session.companyName}</div>
+
+            {/* Meta */}
+            <div className="pi">
+              <div className="pi-card">
+                <div className="pi-lbl">اسم الجلسة</div>
+                <div className="pi-val">{session.label}</div>
+              </div>
+              <div className="pi-card">
+                <div className="pi-lbl">الشركة</div>
+                <div className="pi-val">{session.companyName}</div>
+              </div>
+              <div className="pi-card">
+                <div className="pi-lbl">التاريخ</div>
+                <div className="pi-val">{session.date}</div>
+              </div>
+              <div className="pi-card">
+                <div className="pi-lbl">عدد الإدخالات</div>
+                <div className="pi-val">{pRows.length}</div>
+              </div>
             </div>
-            <div className="print-info-item">
-              <div className="print-info-label">التاريخ</div>
-              <div className="print-info-val">{session.date}</div>
+
+            {/* Summary boxes */}
+            {pDeps.length > 0 && (
+              <div className="ps-section">
+                <div className="ps-section-title">ملخص الإيداعات</div>
+                <div className="ps-grid">
+                  <div className="ps-box ps-box--dep">
+                    <div className="ps-lbl">إجمالي ل.س جديد</div>
+                    <div className="ps-val">{pDT.newSYP.toLocaleString()}</div>
+                    <div className="ps-sub">ليرة سورية جديدة</div>
+                  </div>
+                  <div className="ps-box ps-box--dep">
+                    <div className="ps-lbl">إجمالي ل.س قديم</div>
+                    <div className="ps-val">{pDT.oldSYP.toLocaleString()}</div>
+                    <div className="ps-sub">ليرة سورية قديمة</div>
+                  </div>
+                  <div className="ps-box ps-box--dep">
+                    <div className="ps-lbl">إجمالي دولار</div>
+                    <div className="ps-val">${pDT.usd.toLocaleString()}</div>
+                    <div className="ps-sub">دولار أمريكي</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {pWths.length > 0 && (
+              <div className="ps-section">
+                <div className="ps-section-title">ملخص السحوبات</div>
+                <div className="ps-grid">
+                  <div className="ps-box ps-box--wth">
+                    <div className="ps-lbl">إجمالي ل.س جديد</div>
+                    <div className="ps-val">{pWT.newSYP.toLocaleString()}</div>
+                    <div className="ps-sub">ليرة سورية جديدة</div>
+                  </div>
+                  <div className="ps-box ps-box--wth">
+                    <div className="ps-lbl">إجمالي ل.س قديم</div>
+                    <div className="ps-val">{pWT.oldSYP.toLocaleString()}</div>
+                    <div className="ps-sub">ليرة سورية قديمة</div>
+                  </div>
+                  <div className="ps-box ps-box--wth">
+                    <div className="ps-lbl">إجمالي دولار</div>
+                    <div className="ps-val">${pWT.usd.toLocaleString()}</div>
+                    <div className="ps-sub">دولار أمريكي</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Deposits table */}
+            {pDeps.length > 0 && (
+              <>
+                <div className="sec-hdr">
+                  <div className="sec-hdr-bar sec-hdr-bar--dep" />
+                  <div className="sec-hdr-title">الإيداعات</div>
+                  <span className="sec-hdr-count sec-hdr-count--dep">{pDeps.length} إدخال</span>
+                </div>
+                <div className="tbl-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>المندوب</th>
+                        <th>ل.س جديد</th>
+                        <th>ل.س قديم</th>
+                        <th>دولار</th>
+                        <th>ملاحظة</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pDeps.map((e, i) => (
+                        <tr key={e.id} className="dep-row">
+                          <td>{i + 1}</td>
+                          <td>
+                            <div className="rep-cell">
+                              <div className="rep-ava rep-ava--dep">
+                                {e.repName?.charAt(0) || "؟"}
+                              </div>
+                              <span className="rep-name">{e.repName}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="amt amt--purple">
+                              {(e.newSYP || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="amt amt--teal">
+                              {(e.oldSYP || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="amt amt--amber">${(e.usd || 0).toLocaleString()}</span>
+                          </td>
+                          <td>
+                            <span className="note-cell">{e.note || "—"}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="tot-row">
+                        <td colSpan="2">
+                          <span className="tot-label">الإجمالي</span>
+                        </td>
+                        <td>
+                          <span className="amt amt--purple">{pDT.newSYP.toLocaleString()}</span>
+                        </td>
+                        <td>
+                          <span className="amt amt--teal">{pDT.oldSYP.toLocaleString()}</span>
+                        </td>
+                        <td>
+                          <span className="amt amt--amber">${pDT.usd.toLocaleString()}</span>
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {/* Withdrawals table */}
+            {pWths.length > 0 && (
+              <>
+                <div className="sec-hdr">
+                  <div className="sec-hdr-bar sec-hdr-bar--wth" />
+                  <div className="sec-hdr-title">السحوبات</div>
+                  <span className="sec-hdr-count sec-hdr-count--wth">{pWths.length} إدخال</span>
+                </div>
+                <div className="tbl-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>المندوب</th>
+                        <th>ل.س جديد</th>
+                        <th>ل.س قديم</th>
+                        <th>دولار</th>
+                        <th>ملاحظة</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pWths.map((e, i) => (
+                        <tr key={e.id} className="wth-row">
+                          <td>{i + 1}</td>
+                          <td>
+                            <div className="rep-cell">
+                              <div className="rep-ava rep-ava--wth">
+                                {e.repName?.charAt(0) || "؟"}
+                              </div>
+                              <span className="rep-name">{e.repName}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="amt amt--red">{(e.newSYP || 0).toLocaleString()}</span>
+                          </td>
+                          <td>
+                            <span className="amt amt--orange">
+                              {(e.oldSYP || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="amt amt--pink">${(e.usd || 0).toLocaleString()}</span>
+                          </td>
+                          <td>
+                            <span className="note-cell">{e.note || "—"}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="tot-row">
+                        <td colSpan="2">
+                          <span className="tot-label">الإجمالي</span>
+                        </td>
+                        <td>
+                          <span className="amt amt--red">{pWT.newSYP.toLocaleString()}</span>
+                        </td>
+                        <td>
+                          <span className="amt amt--orange">{pWT.oldSYP.toLocaleString()}</span>
+                        </td>
+                        <td>
+                          <span className="amt amt--pink">${pWT.usd.toLocaleString()}</span>
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {/* Net section — only when both */}
+            {printMode === "all" && pDeps.length > 0 && pWths.length > 0 && (
+              <div className="net-section">
+                <div className="net-section-title">الصافي الإجمالي</div>
+                <div className="net-items">
+                  <div className="net-item">
+                    <span className="net-lbl">ل.س جديد</span>
+                    <span
+                      className={`net-val ${pNT.newSYP > 0 ? "net-val--pos" : pNT.newSYP < 0 ? "net-val--neg" : "net-val--zero"}`}
+                    >
+                      {fmtNet(pNT.newSYP)}
+                    </span>
+                  </div>
+                  <div className="net-item">
+                    <span className="net-lbl">ل.س قديم</span>
+                    <span
+                      className={`net-val ${pNT.oldSYP > 0 ? "net-val--pos" : pNT.oldSYP < 0 ? "net-val--neg" : "net-val--zero"}`}
+                    >
+                      {fmtNet(pNT.oldSYP)}
+                    </span>
+                  </div>
+                  <div className="net-item">
+                    <span className="net-lbl">دولار</span>
+                    <span
+                      className={`net-val ${pNT.usd > 0 ? "net-val--pos" : pNT.usd < 0 ? "net-val--neg" : "net-val--zero"}`}
+                    >
+                      {fmtNet(pNT.usd, "$")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="pf">
+              <div className="pf-left">
+                تاريخ الطباعة:{" "}
+                {new Date().toLocaleDateString("ar-SY", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </div>
+              <div className="pf-right">مساعد الصندوق — جميع الحقوق محفوظة</div>
             </div>
-            <div className="print-info-item">
-              <div className="print-info-label">عدد الإدخالات</div>
-              <div className="print-info-val">{entries.length}</div>
-            </div>
-          </div>
-          <div className="print-summary">
-            <div className="sum-box sum-box--purple">
-              <div className="sum-label">إجمالي ل.س جديد</div>
-              <div className="sum-val">{totals.newSYP.toLocaleString()}</div>
-            </div>
-            <div className="sum-box sum-box--teal">
-              <div className="sum-label">إجمالي ل.س قديم</div>
-              <div className="sum-val">{totals.oldSYP.toLocaleString()}</div>
-            </div>
-            <div className="sum-box sum-box--amber">
-              <div className="sum-label">إجمالي الدولار</div>
-              <div className="sum-val">${totals.usd.toLocaleString()}</div>
-            </div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>اسم المندوب</th>
-                <th>ل.س جديد</th>
-                <th>ل.س قديم</th>
-                <th>دولار</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((e, i) => (
-                <tr key={e.id}>
-                  <td>{i + 1}</td>
-                  <td>{e.repName}</td>
-                  <td>{(e.newSYP || 0).toLocaleString()}</td>
-                  <td>{(e.oldSYP || 0).toLocaleString()}</td>
-                  <td>${(e.usd || 0).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="totals-row">
-                <td colSpan="2">الإجمالي</td>
-                <td>{totals.newSYP.toLocaleString()}</td>
-                <td>{totals.oldSYP.toLocaleString()}</td>
-                <td>${totals.usd.toLocaleString()}</td>
-              </tr>
-            </tfoot>
-          </table>
-          <div className="print-footer">
-            تم الإنشاء بواسطة مساعد الصندوق — {new Date().toLocaleDateString("ar-SY")}
           </div>
         </div>
       </div>
@@ -976,435 +1703,404 @@ function SessionDetail({ session, onBack }) {
   );
 }
 
-/* ══════════════════════════════════════
+/* ════════════════════════════════════════════
+   SHARED COMPONENTS
+════════════════════════════════════════════ */
+function Fld({ label, icon, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          fontSize: 11,
+          fontWeight: 700,
+          color: "#64748b",
+          textTransform: "uppercase",
+          letterSpacing: "0.5px",
+        }}
+      >
+        <i className={icon} style={{ fontSize: 10, color: "#34d399" }} />
+        {label}
+      </label>
+      <div
+        style={{
+          position: "relative",
+          border: "1.5px solid #e2e8f0",
+          borderRadius: 11,
+          background: "#f8fafc",
+          transition: "all 0.2s",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+function Spin({ red, sm }) {
+  return (
+    <div
+      style={{
+        display: "inline-block",
+        width: sm ? 12 : 15,
+        height: sm ? 12 : 15,
+        border: `2px solid ${red ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.3)"}`,
+        borderTopColor: red ? "#ef4444" : "#fff",
+        borderRadius: "50%",
+        animation: "sdSpin 0.7s linear infinite",
+      }}
+    />
+  );
+}
+function Empty({ icon, title, sub, color }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "48px 20px",
+        gap: 10,
+      }}
+    >
+      <div
+        style={{
+          width: 72,
+          height: 72,
+          borderRadius: 20,
+          background: "#f8fafc",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 4,
+        }}
+      >
+        <i className={icon} style={{ fontSize: 30, color }} />
+      </div>
+      <div style={{ fontSize: 15, fontWeight: 800, color: "#1e293b" }}>{title}</div>
+      <div style={{ fontSize: 13, color: "#94a3b8" }}>{sub}</div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════
    CSS
-══════════════════════════════════════ */
+════════════════════════════════════════════ */
 const CSS = `
 @keyframes sdGrad{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
-@keyframes sdFadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
-@keyframes sdItemIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
-@keyframes sdTrIn{from{opacity:0;transform:translateX(8px);}to{opacity:1;transform:translateX(0);}}
+@keyframes sdFadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+@keyframes sdItemIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes sdTrIn{from{opacity:0;}to{opacity:1;}}
 @keyframes sdSpin{to{transform:rotate(360deg);}}
-@keyframes sdPulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+@keyframes pdIn{from{opacity:0;}to{opacity:1;}}
+@keyframes pdBoxIn{from{opacity:0;transform:scale(0.9) translateY(20px);}to{opacity:1;transform:scale(1) translateY(0);}}
+@keyframes pdOptIn{from{opacity:0;transform:translateX(12px);}to{opacity:1;transform:translateX(0);}}
 
-/* ── Session List ── */
-.sl-root{display:flex;flex-direction:column;height:100%;background:#f1f5f9;}
-.sl-header{
-  position:relative;overflow:hidden;flex-shrink:0;
-  background:linear-gradient(135deg,#022c22,#065f46,#059669);
-  background-size:200% 200%;animation:sdGrad 10s ease infinite;
-}
-.sl-header-bg{
-  position:absolute;inset:0;
-  background:linear-gradient(135deg,#022c22,#064e3b,#065f46,#059669,#10b981);
-  background-size:300% 300%;animation:sdGrad 12s ease infinite;
-}
-.sl-header-body{
-  position:relative;z-index:1;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:24px 28px 16px;gap:16px;
-}
-.sl-header-left{display:flex;align-items:center;gap:14px;}
-.sl-header-ico{
-  width:50px;height:50px;border-radius:14px;flex-shrink:0;
-  background:linear-gradient(135deg,rgba(255,255,255,0.2),rgba(255,255,255,0.08));
-  border:1px solid rgba(255,255,255,0.2);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 16px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.2);
-}
-.sl-header-title{font-size:21px;font-weight:900;color:#fff;letter-spacing:-0.4px;margin-bottom:3px;}
-.sl-header-sub{font-size:13px;color:rgba(255,255,255,0.6);}
-.sl-new-btn{
-  display:flex;align-items:center;gap:8px;
-  padding:10px 20px;border-radius:11px;border:none;cursor:pointer;
-  background:rgba(255,255,255,0.15);
-  border:1px solid rgba(255,255,255,0.25);
-  color:#fff;font-size:14px;font-weight:700;
-  transition:all 0.25s;white-space:nowrap;flex-shrink:0;
-}
-.sl-new-btn:hover{background:rgba(255,255,255,0.25);}
-
-/* Stats bar */
-.sl-stats-bar{
-  position:relative;z-index:1;
-  display:flex;gap:0;
-  border-top:1px solid rgba(255,255,255,0.1);
-}
-.sl-stat{
-  flex:1;display:flex;align-items:center;gap:10px;
-  padding:14px 18px;
-  border-left:1px solid rgba(255,255,255,0.08);
-}
+/* SESSION LIST */
+.sl-root{display:flex;flex-direction:column;height:100%;min-height:0;background:#f1f5f9;}
+.sl-header{position:relative;overflow:hidden;flex-shrink:0;}
+.sl-hbg{position:absolute;inset:0;background:linear-gradient(135deg,#022c22,#064e3b,#059669,#10b981);background-size:300% 300%;animation:sdGrad 12s ease infinite;}
+.sl-htop{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:20px 24px 14px;gap:12px;flex-wrap:wrap;}
+.sl-htop-l{display:flex;align-items:center;gap:12px;}
+.sl-hico{width:44px;height:44px;border-radius:12px;flex-shrink:0;background:linear-gradient(135deg,rgba(255,255,255,0.2),rgba(255,255,255,0.08));border:1px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;}
+.sl-htitle{font-size:19px;font-weight:900;color:#fff;margin-bottom:2px;}
+.sl-hsub{font-size:12px;color:rgba(255,255,255,0.6);}
+.sl-newbtn{display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.12);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.sl-newbtn:hover{background:rgba(255,255,255,0.22);}
+.sl-stats{position:relative;z-index:1;display:flex;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.1);}
+.sl-stat{flex:1;min-width:120px;display:flex;align-items:center;gap:8px;padding:10px 14px;border-left:1px solid rgba(255,255,255,0.07);}
 .sl-stat:last-child{border-left:none;}
-.sl-stat-val{font-size:16px;font-weight:900;color:#fff;line-height:1;}
-.sl-stat-lbl{font-size:10px;color:rgba(255,255,255,0.5);font-weight:500;margin-top:2px;}
-
-.sl-body{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px;}
-
-/* Form card */
-.sl-form-card{
-  background:#fff;border-radius:18px;padding:22px 24px;
-  border:1px solid #f1f5f9;
-  box-shadow:0 2px 16px rgba(0,0,0,0.05);
-  animation:sdFadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both;
-}
-.sl-form-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#1e293b;margin-bottom:18px;}
-.sl-warn{
-  display:flex;align-items:center;gap:8px;
-  padding:11px 14px;border-radius:10px;
-  background:#fffbeb;border:1px solid #fef3c7;
-  font-size:13px;font-weight:500;color:#92400e;
-}
-.sl-form{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end;}
-.sl-field{display:flex;flex-direction:column;gap:7px;}
-.sl-label{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;}
-.sl-input-wrap{
-  position:relative;border:1.5px solid #e2e8f0;border-radius:12px;
-  background:#f8fafc;display:flex;align-items:center;transition:all 0.22s;
-}
-.sl-input-wrap:focus-within{border-color:#059669;background:#fff;box-shadow:0 0 0 4px rgba(5,150,105,0.1);}
-.sl-input-ico{position:absolute;right:13px;color:#94a3b8;font-size:13px;pointer-events:none;}
-.sl-input{width:100%;padding:12px 38px 12px 14px;border:none;background:transparent;font-size:14px;color:#1e293b;text-align:right;border-radius:12px;}
-.sl-input:focus{outline:none;}
-.sl-select-wrap{
-  position:relative;border:1.5px solid #e2e8f0;border-radius:12px;
-  background:#f8fafc;display:flex;align-items:center;transition:all 0.22s;
-}
-.sl-select-wrap:focus-within{border-color:#059669;background:#fff;box-shadow:0 0 0 4px rgba(5,150,105,0.1);}
-.sl-select{width:100%;padding:12px 38px 12px 14px;border:none;background:transparent;font-size:14px;color:#1e293b;text-align:right;border-radius:12px;appearance:none;cursor:pointer;}
-.sl-select:focus{outline:none;}
-.sl-submit-btn{
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  padding:12px 20px;border-radius:12px;border:none;
-  background:linear-gradient(135deg,#059669,#10b981);
-  color:#fff;font-size:14px;font-weight:700;cursor:pointer;
-  box-shadow:0 4px 16px rgba(5,150,105,0.35);
-  transition:all 0.25s;grid-column:span 3;
-}
-.sl-submit-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 24px rgba(5,150,105,0.45);}
-.sl-submit-btn:disabled{opacity:0.6;cursor:not-allowed;}
-
-/* Filter */
-.sl-filter-wrap{
-  position:relative;max-width:260px;
-}
-.sl-filter-ico{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px;pointer-events:none;z-index:1;}
-.sl-filter-sel{
-  width:100%;padding:10px 36px 10px 12px;
-  border:1.5px solid #e2e8f0;border-radius:11px;
-  background:#fff;font-size:13px;color:#1e293b;text-align:right;
-  appearance:none;cursor:pointer;transition:all 0.22s;
-}
-.sl-filter-sel:focus{outline:none;border-color:#059669;}
-
-/* Empty */
-.sl-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 24px;gap:10px;animation:sdFadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both;}
-.sl-empty-ico{width:80px;height:80px;border-radius:22px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);display:flex;align-items:center;justify-content:center;margin-bottom:4px;}
-.sl-empty-title{font-size:16px;font-weight:800;color:#1e293b;}
-.sl-empty-sub{font-size:13px;color:#94a3b8;}
-
-/* Session items */
+.sl-stat-val{font-size:13px;font-weight:900;color:#fff;line-height:1;}
+.sl-stat-lbl{font-size:9px;color:rgba(255,255,255,0.45);font-weight:500;margin-top:1px;}
+.sl-body{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px;min-height:0;}
+.sl-form-card{background:#fff;border-radius:16px;padding:18px 20px;border:1px solid #f1f5f9;box-shadow:0 2px 14px rgba(0,0,0,0.05);animation:sdFadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both;}
+.sl-form-title{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:14px;}
+.sl-form{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;}
+.filter-row{display:flex;align-items:center;gap:8px;}
+.filter-sel{padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:10px;background:#fff;font-size:13px;color:#1e293b;appearance:none;cursor:pointer;min-width:180px;}
+.filter-sel:focus{outline:none;border-color:#059669;}
 .sl-list{display:flex;flex-direction:column;gap:12px;}
-.sl-item{
-  background:#fff;border-radius:18px;padding:18px 20px;
-  border:1px solid #f1f5f9;
-  box-shadow:0 2px 12px rgba(0,0,0,0.05);
-  cursor:pointer;
-  transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
-  animation:sdItemIn 0.4s cubic-bezier(0.22,1,0.36,1) both;
-}
-.sl-item:hover{
-  transform:translateY(-4px);
-  box-shadow:0 12px 32px rgba(5,150,105,0.12);
-  border-color:rgba(5,150,105,0.2);
-}
-.sl-item-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px;}
-.sl-item-ico{
-  width:44px;height:44px;border-radius:13px;flex-shrink:0;
-  background:linear-gradient(135deg,#d1fae5,#a7f3d0);
+.sl-card{background:#fff;border-radius:16px;padding:16px 18px;border:1px solid #f1f5f9;box-shadow:0 2px 10px rgba(0,0,0,0.04);cursor:pointer;transition:all 0.28s cubic-bezier(0.4,0,0.2,1);animation:sdItemIn 0.4s cubic-bezier(0.22,1,0.36,1) both;}
+.sl-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(5,150,105,0.12);border-color:rgba(5,150,105,0.18);}
+.sl-card-top{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.sl-card-ico{width:40px;height:40px;border-radius:11px;flex-shrink:0;background:linear-gradient(135deg,#d1fae5,#a7f3d0);display:flex;align-items:center;justify-content:center;}
+.sl-card-info{flex:1;min-width:0;}
+.sl-card-label{font-size:15px;font-weight:800;color:#1e293b;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sl-card-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.sl-card-meta span{display:flex;align-items:center;gap:4px;font-size:11px;color:#94a3b8;font-weight:500;}
+.meta-co{color:#0891b2 !important;font-weight:600 !important;}
+.del-btn{width:30px;height:30px;border-radius:8px;background:#fef2f2;border:1px solid #fecaca;color:#ef4444;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}
+.del-btn:hover:not(:disabled){background:#fee2e2;transform:scale(1.1);}
+.del-btn:disabled{opacity:0.6;cursor:not-allowed;}
+.sl-card-amounts{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.amount-group{flex:1;min-width:140px;background:#f8fafc;border-radius:10px;padding:9px 12px;}
+.amount-group--dep{border-right:3px solid #10b981;}
+.amount-group--wth{border-right:3px solid #ef4444;}
+.amount-group-label{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;}
+.amount-group--dep .amount-group-label{color:#059669;}
+.amount-group--wth .amount-group-label{color:#ef4444;}
+.amount-chips{display:flex;gap:5px;flex-wrap:wrap;}
+.amount-divider{width:1px;background:#e2e8f0;flex-shrink:0;}
+.chip{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;}
+.chip em{font-style:normal;font-size:9px;font-weight:500;opacity:0.7;}
+.chip--purple{background:#f5f3ff;color:#4f46e5;}.chip--teal{background:#f0fdf4;color:#059669;}.chip--amber{background:#fffbeb;color:#d97706;}
+.chip--red{background:#fef2f2;color:#dc2626;}.chip--orange{background:#fff7ed;color:#ea580c;}.chip--pink{background:#fdf2f8;color:#be185d;}
+.sl-card-open{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#059669;}
+
+/* SESSION DETAIL */
+.sd-root{display:flex;flex-direction:column;height:100%;min-height:0;background:#f1f5f9;}
+.sd-header{position:relative;overflow:hidden;flex-shrink:0;}
+.sd-hbg{position:absolute;inset:0;background:linear-gradient(135deg,#0f0c29,#1e1b4b,#1a237e,#0d47a1);background-size:300% 300%;animation:sdGrad 12s ease infinite;}
+.sd-htop{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:14px 20px 8px;gap:10px;flex-wrap:wrap;}
+.sd-hmeta-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.sd-hmeta-row span{display:flex;align-items:center;gap:4px;font-size:11px;color:rgba(255,255,255,0.55);}
+.sd-hinfo{position:relative;z-index:1;display:flex;align-items:center;gap:10px;padding:6px 20px 12px;}
+.sd-hico{width:38px;height:38px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,rgba(255,255,255,0.2),rgba(255,255,255,0.08));border:1px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;}
+.sd-htitle{font-size:17px;font-weight:900;color:#fff;}
+.sd-net-bar{position:relative;z-index:1;display:flex;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.1);}
+.sd-net-chip{flex:1;min-width:90px;padding:10px 14px;border-left:1px solid rgba(255,255,255,0.07);}
+.sd-net-chip:last-child{border-left:none;}
+.sd-net-lbl{font-size:9px;color:rgba(255,255,255,0.4);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:2px;}
+.sd-net-val{font-size:14px;font-weight:900;color:#fff;}
+.sd-net-val--pos{color:#6ee7b7 !important;}.sd-net-val--neg{color:#fca5a5 !important;}
+.sd-body{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px;min-height:0;}
+.sd-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.sd-sum-card{background:#fff;border-radius:16px;padding:18px 20px;border:1px solid #f1f5f9;box-shadow:0 2px 12px rgba(0,0,0,0.05);display:flex;flex-direction:column;gap:14px;animation:sdFadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both;}
+.sd-sum-card--dep{border-top:3px solid #10b981;}.sd-sum-card--wth{border-top:3px solid #ef4444;}
+.sd-sum-card-header{display:flex;align-items:center;gap:12px;}
+.sd-sum-card-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sd-sum-card-ico--dep{background:#d1fae5;}.sd-sum-card-ico--wth{background:#fee2e2;}
+.sd-sum-card-title{font-size:15px;font-weight:800;color:#1e293b;margin-bottom:2px;}
+.sd-sum-card-count{font-size:12px;color:#94a3b8;font-weight:500;}
+.sd-sum-amounts{display:flex;flex-direction:column;gap:8px;}
+.sd-sum-amount{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:#f8fafc;border-radius:8px;}
+.sd-sum-lbl{font-size:12px;color:#64748b;font-weight:500;}
+.sd-sum-val{font-size:14px;font-weight:800;}
+.sd-sum-val--purple{color:#4f46e5;}.sd-sum-val--teal{color:#059669;}.sd-sum-val--amber{color:#d97706;}
+.sd-sum-val--red{color:#dc2626;}.sd-sum-val--orange{color:#ea580c;}.sd-sum-val--pink{color:#be185d;}
+.sd-sum-btn{display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:10px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.25s;width:100%;}
+.sd-sum-btn--dep{background:linear-gradient(135deg,#059669,#10b981);color:#fff;box-shadow:0 3px 12px rgba(5,150,105,0.3);}
+.sd-sum-btn--dep:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(5,150,105,0.4);}
+.sd-sum-btn--wth{background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;box-shadow:0 3px 12px rgba(220,38,38,0.3);}
+.sd-sum-btn--wth:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(220,38,38,0.4);}
+.sd-net-card{background:#fff;border-radius:16px;padding:18px 20px;border:1px solid #f1f5f9;box-shadow:0 2px 12px rgba(0,0,0,0.05);animation:sdFadeUp 0.4s 0.1s cubic-bezier(0.22,1,0.36,1) both;}
+.sd-net-card-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:14px;}
+.sd-net-amounts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.sd-net-amount{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:11px;background:#f8fafc;}
+.sd-net-amount-lbl{font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;}
+.sd-net-amount-val{font-size:18px;font-weight:900;color:#1e293b;}
+.sd-net-amount-val--pos{color:#059669 !important;}.sd-net-amount-val--neg{color:#dc2626 !important;}
+.sd-quick-actions{display:flex;gap:10px;}
+.sd-qa-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.25s;}
+.sd-qa-btn--dep{background:#f0fdf4;color:#059669;border:1.5px solid #bbf7d0;}
+.sd-qa-btn--dep:hover{background:linear-gradient(135deg,#059669,#10b981);color:#fff;border-color:transparent;transform:translateY(-2px);box-shadow:0 6px 18px rgba(5,150,105,0.3);}
+.sd-qa-btn--wth{background:#fef2f2;color:#dc2626;border:1.5px solid #fecaca;}
+.sd-qa-btn--wth:hover{background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border-color:transparent;transform:translateY(-2px);box-shadow:0 6px 18px rgba(220,38,38,0.3);}
+
+/* ENTRIES PAGE */
+.ep-root{display:flex;flex-direction:column;height:100%;min-height:0;background:#f1f5f9;}
+.ep-header{position:relative;overflow:hidden;flex-shrink:0;}
+.ep-hbg{position:absolute;inset:0;background:linear-gradient(135deg,#0f0c29,#1e1b4b,#1a237e,#0d47a1);background-size:300% 300%;animation:sdGrad 12s ease infinite;}
+.ep-htop{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:12px 18px 8px;gap:8px;flex-wrap:wrap;}
+.ep-print-btn{display:flex;align-items:center;gap:7px;padding:8px 18px;border-radius:10px;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.12);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.ep-print-btn:hover{background:rgba(255,255,255,0.22);transform:translateY(-1px);}
+.ep-hinfo{position:relative;z-index:1;display:flex;align-items:center;gap:10px;padding:4px 18px 10px;}
+.ep-hico{width:36px;height:36px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,rgba(255,255,255,0.2),rgba(255,255,255,0.08));border:1px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;}
+.ep-htitle{font-size:16px;font-weight:900;color:#fff;margin-bottom:3px;}
+.ep-hmeta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+.ep-hmeta span{display:flex;align-items:center;gap:4px;font-size:11px;color:rgba(255,255,255,0.5);}
+.ep-net-bar{position:relative;z-index:1;display:flex;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.1);}
+.ep-net-chip{flex:1;min-width:80px;padding:9px 12px;border-left:1px solid rgba(255,255,255,0.07);}
+.ep-net-chip:last-child{border-left:none;}
+.ep-net-lbl{font-size:9px;color:rgba(255,255,255,0.38);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:2px;}
+.ep-net-val{font-size:13px;font-weight:900;color:#fff;}
+.ep-net-val--pos{color:#6ee7b7 !important;}.ep-net-val--neg{color:#fca5a5 !important;}
+.ep-body{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-height:0;}
+.ep-tabs{display:flex;gap:5px;background:#fff;border-radius:13px;padding:4px;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);flex-shrink:0;}
+.ep-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 14px;border-radius:10px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:#94a3b8;transition:all 0.22s;}
+.ep-tab:hover{background:#f8fafc;color:#475569;}
+.ep-tab--dep{background:linear-gradient(135deg,#059669,#10b981) !important;color:#fff !important;box-shadow:0 4px 12px rgba(5,150,105,0.28);}
+.ep-tab--wth{background:linear-gradient(135deg,#dc2626,#ef4444) !important;color:#fff !important;box-shadow:0 4px 12px rgba(220,38,38,0.28);}
+.ep-tab-badge{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:5px;font-size:10px;font-weight:800;background:rgba(0,0,0,0.08);color:inherit;}
+.ep-tab-badge--on-dep,.ep-tab-badge--on-wth{background:rgba(255,255,255,0.22) !important;color:#fff !important;}
+.ep-form-card{background:#fff;border-radius:15px;padding:16px 18px;border:1px solid #f1f5f9;box-shadow:0 2px 12px rgba(0,0,0,0.04);border-top:3px solid #059669;flex-shrink:0;}
+.ep-form-card--wth{border-top-color:#ef4444 !important;}
+.ep-form-title{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:12px;}
+.ep-form-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:9px;align-items:end;}
+.ep-field{display:flex;flex-direction:column;gap:5px;}
+.ep-field--note{grid-column:span 3;}
+.ep-field--submit{grid-column:span 1;}
+.ep-lbl{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.4px;}
+.ep-lbl i{font-size:10px;color:#6ee7b7;}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dot--purple{background:#818cf8;}.dot--teal{background:#34d399;}.dot--amber{background:#fbbf24;}
+.ep-inp-wrap{border:1.5px solid #e2e8f0;border-radius:10px;background:#f8fafc;transition:all 0.2s;position:relative;}
+.ep-inp-wrap--dep:focus-within,.ep-inp-wrap--dep:focus-within{border-color:#059669;background:#fff;box-shadow:0 0 0 3px rgba(5,150,105,0.1);}
+.ep-inp-wrap--wth:focus-within{border-color:#ef4444;background:#fff;box-shadow:0 0 0 3px rgba(239,68,68,0.1);}
+.ep-inp-wrap--purple:focus-within{border-color:#818cf8;background:#fff;box-shadow:0 0 0 3px rgba(129,140,248,0.1);}
+.ep-inp-wrap--teal:focus-within{border-color:#34d399;background:#fff;box-shadow:0 0 0 3px rgba(52,211,153,0.1);}
+.ep-inp-wrap--amber:focus-within{border-color:#fbbf24;background:#fff;box-shadow:0 0 0 3px rgba(251,191,36,0.1);}
+.ep-inp-wrap--red:focus-within{border-color:#ef4444;background:#fff;box-shadow:0 0 0 3px rgba(239,68,68,0.1);}
+.ep-inp-wrap--orange:focus-within{border-color:#f97316;background:#fff;box-shadow:0 0 0 3px rgba(249,115,22,0.1);}
+.ep-inp-wrap--pink:focus-within{border-color:#ec4899;background:#fff;box-shadow:0 0 0 3px rgba(236,72,153,0.1);}
+.ep-ico{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px;pointer-events:none;}
+.ep-inp{width:100%;padding:10px 12px;border:none;background:transparent;font-size:14px;color:#1e293b;text-align:right;border-radius:10px;}
+.ep-inp:focus{outline:none;}
+.ep-submit{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.22s;width:100%;white-space:nowrap;}
+.ep-submit--dep{background:linear-gradient(135deg,#059669,#10b981);box-shadow:0 3px 12px rgba(5,150,105,0.28);}
+.ep-submit--dep:hover:not(:disabled){transform:translateY(-2px);}
+.ep-submit--wth{background:linear-gradient(135deg,#dc2626,#ef4444);box-shadow:0 3px 12px rgba(220,38,38,0.28);}
+.ep-submit--wth:hover:not(:disabled){transform:translateY(-2px);}
+.ep-submit:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+.ep-totals-strip{display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0;}
+.ep-total-chip{flex:1;min-width:90px;display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-radius:10px;}
+.ep-total-lbl{font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.3px;}
+.ep-total-val{font-size:14px;font-weight:900;}
+.et--purple{background:#f5f3ff;}.et--purple .ep-total-val{color:#4f46e5;}
+.et--teal{background:#f0fdf4;}.et--teal .ep-total-val{color:#059669;}
+.et--amber{background:#fffbeb;}.et--amber .ep-total-val{color:#d97706;}
+.et--red{background:#fef2f2;}.et--red .ep-total-val{color:#dc2626;}
+.et--orange{background:#fff7ed;}.et--orange .ep-total-val{color:#ea580c;}
+.et--pink{background:#fdf2f8;}.et--pink .ep-total-val{color:#be185d;}
+.et--neutral{background:#f8fafc;}.et--neutral .ep-total-val{color:#1e293b;}
+.ep-table-section{background:#fff;border-radius:16px;border:1px solid #f1f5f9;box-shadow:0 2px 12px rgba(0,0,0,0.05);display:flex;flex-direction:column;min-height:0;flex-shrink:0;}
+.ep-table-title-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid #f8fafc;flex-shrink:0;}
+.ep-table-title{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:#1e293b;}
+.tbl-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;}
+.tbl-badge--dep{background:#f0fdf4;color:#059669;}.tbl-badge--wth{background:#fef2f2;color:#dc2626;}
+.ep-tbl-outer{overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;border-radius:0 0 16px 16px;}
+.ep-tbl{width:100%;border-collapse:collapse;min-width:580px;}
+.ep-tbl thead th{background:#f8fafc;padding:9px 13px;font-size:11px;font-weight:700;color:#64748b;text-align:right;border-bottom:1px solid #f1f5f9;text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap;position:sticky;top:0;z-index:5;}
+.ep-tr{border-bottom:1px solid #f8fafc;transition:background 0.15s;animation:sdTrIn 0.25s ease both;}
+.ep-tr--dep:hover{background:#f0fdf4;}.ep-tr--wth:hover{background:#fef2f2;}
+.ep-tr--dep td:first-child{border-right:3px solid #10b981;}.ep-tr--wth td:first-child{border-right:3px solid #ef4444;}
+.ep-tr td{padding:11px 13px;vertical-align:middle;}
+.td-num{font-size:11px;font-weight:700;color:#94a3b8;text-align:center;width:36px;}
+.td-rep{display:flex;align-items:center;gap:9px;white-space:nowrap;}
+.td-ava{width:32px;height:32px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;}
+.td-ava--dep{background:linear-gradient(135deg,#059669,#34d399);}.td-ava--wth{background:linear-gradient(135deg,#dc2626,#f87171);}
+.td-name{font-size:13px;font-weight:700;color:#1e293b;}
+.tbl-amt{display:inline-flex;align-items:center;padding:3px 9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;}
+.tbl-amt--purple{background:#f5f3ff;color:#4f46e5;}.tbl-amt--teal{background:#f0fdf4;color:#059669;}.tbl-amt--amber{background:#fffbeb;color:#d97706;}
+.tbl-amt--red{background:#fef2f2;color:#dc2626;}.tbl-amt--orange{background:#fff7ed;color:#ea580c;}.tbl-amt--pink{background:#fdf2f8;color:#be185d;}
+.tbl-amt--bold{font-size:13px !important;padding:5px 11px !important;font-weight:900 !important;}
+.td-note{font-size:12px;color:#94a3b8;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
+.td-edit{width:100%;padding:6px 8px;border-radius:7px;font-size:12px;color:#1e293b;text-align:right;min-width:70px;border:1.5px solid #e2e8f0;background:#f8fafc;}
+.td-edit--purple{border-color:#818cf8;background:#f5f3ff;}.td-edit--teal{border-color:#34d399;background:#f0fdf4;}.td-edit--amber{border-color:#fbbf24;background:#fffbeb;}
+.td-edit:focus{outline:none;}
+.td-acts{display:flex;gap:5px;align-items:center;}
+.act-btn{width:28px;height:28px;border-radius:7px;border:none;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;transition:all 0.18s;}
+.act-btn--edit{background:#f5f3ff;color:#4f46e5;}.act-btn--edit:hover{background:#ede9fe;transform:scale(1.1);}
+.act-btn--del{background:#fef2f2;color:#ef4444;}.act-btn--del:hover:not(:disabled){background:#fee2e2;transform:scale(1.1);}
+.act-btn--del:disabled{opacity:0.6;cursor:not-allowed;}
+.act-btn--save{background:linear-gradient(135deg,#059669,#10b981);color:#fff;}.act-btn--save:hover{transform:scale(1.1);}
+.act-btn--cancel{background:#f8fafc;color:#94a3b8;border:1px solid #e2e8f0;}
+.ep-tfoot td{padding:10px 13px;background:#f8fafc;border-top:2px solid #e2e8f0;font-weight:700;}
+.ep-tfoot-lbl{font-size:12px;font-weight:800;color:#1e293b;}
+
+/* ════ PRINT DIALOG ════ */
+.pd-overlay{
+  position:fixed;inset:0;
+  background:rgba(15,12,41,0.65);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  z-index:1000;
   display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  animation:pdIn 0.2s ease both;
 }
-.sl-item-info{flex:1;}
-.sl-item-label{font-size:16px;font-weight:800;color:#1e293b;margin-bottom:5px;}
-.sl-item-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-.sl-item-meta span{display:flex;align-items:center;gap:4px;font-size:12px;color:#94a3b8;font-weight:500;}
-.sl-item-co{color:#0891b2 !important;font-weight:600 !important;}
-.sl-item-actions{flex-shrink:0;}
-.sl-del-btn{
-  width:32px;height:32px;border-radius:9px;
-  background:#fef2f2;border:1px solid #fecaca;
-  color:#ef4444;font-size:13px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  transition:all 0.2s;
-}
-.sl-del-btn:hover:not(:disabled){background:#fee2e2;transform:scale(1.1);}
-.sl-del-btn:disabled{opacity:0.6;cursor:not-allowed;}
-
-.sl-item-totals{
-  display:flex;gap:8px;margin-bottom:12px;
-}
-.sl-total{
-  flex:1;display:flex;flex-direction:column;gap:2px;
-  padding:10px 12px;border-radius:11px;
-}
-.sl-total--purple{background:#f5f3ff;}
-.sl-total--teal{background:#f0fdf4;}
-.sl-total--amber{background:#fffbeb;}
-.sl-total-lbl{font-size:10px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.4px;}
-.sl-total-val{font-size:14px;font-weight:800;color:#1e293b;}
-
-.sl-item-arrow{
-  display:flex;align-items:center;gap:6px;
-  font-size:12px;font-weight:700;color:#059669;
-}
-
-/* ── Session Detail ── */
-.sd-root{display:flex;flex-direction:column;height:100%;background:#f1f5f9;}
-.sd-header{
-  position:relative;overflow:hidden;flex-shrink:0;
-  background:linear-gradient(135deg,#1e1b4b,#1a237e,#1565c0);
-}
-.sd-header-bg{
-  position:absolute;inset:0;
-  background:linear-gradient(135deg,#0f0c29,#1e1b4b,#1a237e,#0d47a1);
-  background-size:300% 300%;animation:sdGrad 12s ease infinite;
-}
-.sd-header-body{position:relative;z-index:1;padding:18px 24px 16px;}
-.sd-header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-.sd-back-btn{
-  display:flex;align-items:center;gap:7px;
-  padding:8px 16px;border-radius:10px;border:none;cursor:pointer;
-  background:rgba(255,255,255,0.12);
-  border:1px solid rgba(255,255,255,0.2);
-  color:rgba(255,255,255,0.85);font-size:13px;font-weight:600;
-  transition:all 0.2s;
-}
-.sd-back-btn:hover{background:rgba(255,255,255,0.2);}
-.sd-header-actions{display:flex;gap:8px;}
-.sd-action-btn{
-  display:flex;align-items:center;gap:7px;
-  padding:8px 16px;border-radius:10px;border:none;cursor:pointer;
-  font-size:13px;font-weight:700;
-  transition:all 0.25s;
-}
-.sd-action-btn--csv{
-  background:rgba(5,150,105,0.2);
-  border:1px solid rgba(5,150,105,0.3);color:#6ee7b7;
-}
-.sd-action-btn--csv:hover{background:rgba(5,150,105,0.35);}
-.sd-action-btn--print{
-  background:rgba(59,130,246,0.2);
-  border:1px solid rgba(59,130,246,0.3);color:#93c5fd;
-}
-.sd-action-btn--print:hover{background:rgba(59,130,246,0.35);}
-.sd-header-info{display:flex;align-items:center;gap:14px;}
-.sd-header-ico{
-  width:46px;height:46px;border-radius:13px;flex-shrink:0;
-  background:linear-gradient(135deg,rgba(255,255,255,0.2),rgba(255,255,255,0.08));
-  border:1px solid rgba(255,255,255,0.2);
-  display:flex;align-items:center;justify-content:center;
-}
-.sd-header-title{font-size:19px;font-weight:900;color:#fff;margin-bottom:5px;}
-.sd-header-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-.sd-header-meta span{display:flex;align-items:center;gap:4px;font-size:12px;color:rgba(255,255,255,0.55);font-weight:500;}
-
-/* Totals bar */
-.sd-totals-bar{
-  position:relative;z-index:1;
-  display:flex;gap:0;
-  border-top:1px solid rgba(255,255,255,0.1);
-}
-.sd-total-chip{
-  flex:1;display:flex;align-items:center;gap:10px;
-  padding:13px 16px;
-  border-left:1px solid rgba(255,255,255,0.08);
-}
-.sd-total-chip:last-child{border-left:none;}
-.sd-total-chip-ico{
-  width:32px;height:32px;border-radius:9px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-}
-.sd-total-chip--purple .sd-total-chip-ico{background:rgba(129,140,248,0.2);}
-.sd-total-chip--teal   .sd-total-chip-ico{background:rgba(52,211,153,0.2);}
-.sd-total-chip--amber  .sd-total-chip-ico{background:rgba(251,191,36,0.2);}
-.sd-total-chip--blue   .sd-total-chip-ico{background:rgba(96,165,250,0.2);}
-.sd-total-chip-lbl{font-size:10px;color:rgba(255,255,255,0.5);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;}
-.sd-total-chip-val{font-size:16px;font-weight:900;color:#fff;line-height:1.2;}
-
-.sd-body{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px;}
-
-/* Add form */
-.sd-add-card{
-  background:#fff;border-radius:18px;padding:20px 22px;
-  border:1px solid #f1f5f9;
-  box-shadow:0 2px 16px rgba(0,0,0,0.05);
-  animation:sdFadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both;
-}
-.sd-add-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#1e293b;margin-bottom:16px;}
-.sd-warn{display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:10px;background:#fffbeb;border:1px solid #fef3c7;font-size:13px;font-weight:500;color:#92400e;}
-.sd-add-form{display:flex;flex-direction:column;gap:14px;}
-
-.sd-currencies{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
-.sd-field{display:flex;flex-direction:column;gap:7px;}
-.sd-label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;}
-.sd-cur-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.sd-cur-dot--purple{background:#818cf8;}
-.sd-cur-dot--teal{background:#34d399;}
-.sd-cur-dot--amber{background:#fbbf24;}
-
-.sd-input-wrap{
-  border:1.5px solid #e2e8f0;border-radius:12px;
-  background:#f8fafc;transition:all 0.22s;
-}
-.sd-input-wrap--purple:focus-within{border-color:#818cf8;background:#fff;box-shadow:0 0 0 4px rgba(129,140,248,0.1);}
-.sd-input-wrap--teal:focus-within{border-color:#34d399;background:#fff;box-shadow:0 0 0 4px rgba(52,211,153,0.1);}
-.sd-input-wrap--amber:focus-within{border-color:#fbbf24;background:#fff;box-shadow:0 0 0 4px rgba(251,191,36,0.1);}
-.sd-input{width:100%;padding:12px 14px;border:none;background:transparent;font-size:15px;color:#1e293b;text-align:right;border-radius:12px;}
-.sd-input:focus{outline:none;}
-.sd-select-wrap{
-  position:relative;border:1.5px solid #e2e8f0;border-radius:12px;
-  background:#f8fafc;transition:all 0.22s;
-}
-.sd-select-wrap:focus-within{border-color:#059669;background:#fff;box-shadow:0 0 0 4px rgba(5,150,105,0.1);}
-.sd-input-ico{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px;pointer-events:none;}
-.sd-select{width:100%;padding:12px 38px 12px 14px;border:none;background:transparent;font-size:14px;color:#1e293b;text-align:right;border-radius:12px;appearance:none;cursor:pointer;}
-.sd-select:focus{outline:none;}
-.sd-submit-btn{
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  padding:13px;border-radius:12px;border:none;
-  background:linear-gradient(135deg,#059669,#10b981);
-  color:#fff;font-size:15px;font-weight:700;cursor:pointer;
-  box-shadow:0 4px 16px rgba(5,150,105,0.35);
-  transition:all 0.25s;
-}
-.sd-submit-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 24px rgba(5,150,105,0.45);}
-.sd-submit-btn:disabled{opacity:0.6;cursor:not-allowed;}
-
-/* Empty */
-.sd-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:10px;animation:sdFadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both;}
-.sd-empty-ico{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);display:flex;align-items:center;justify-content:center;margin-bottom:4px;}
-.sd-empty-title{font-size:15px;font-weight:800;color:#1e293b;}
-.sd-empty-sub{font-size:13px;color:#94a3b8;}
-
-/* Table */
-.sd-table-card{
-  background:#fff;border-radius:18px;
-  border:1px solid #f1f5f9;
-  box-shadow:0 2px 16px rgba(0,0,0,0.05);
+.pd-box{
+  background:#fff;
+  border-radius:24px;
+  padding:0;
+  width:100%;max-width:420px;
+  box-shadow:0 32px 80px rgba(0,0,0,0.25),0 0 0 1px rgba(0,0,0,0.04);
+  animation:pdBoxIn 0.32s cubic-bezier(0.22,1,0.36,1) both;
   overflow:hidden;
-  animation:sdFadeUp 0.4s 0.1s cubic-bezier(0.22,1,0.36,1) both;
 }
-.sd-table-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:16px 20px;border-bottom:1px solid #f8fafc;
+.pd-header{
+  display:flex;align-items:center;gap:14px;
+  padding:22px 24px 18px;
+  border-bottom:1px solid #f1f5f9;
+  background:linear-gradient(135deg,#fafbff,#f5f3ff);
 }
-.sd-table-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#1e293b;}
-.sd-table-count{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:22px;height:22px;border-radius:6px;
-  background:#f0fdf4;color:#059669;font-size:11px;font-weight:800;
-}
-.sd-table-wrap{overflow-x:auto;}
-.sd-table{width:100%;border-collapse:collapse;}
-.sd-table thead th{
-  background:#f8fafc;padding:11px 16px;
-  font-size:12px;font-weight:700;color:#64748b;
-  text-align:right;border-bottom:1px solid #f1f5f9;
-  text-transform:uppercase;letter-spacing:0.5px;
-  white-space:nowrap;
-}
-.sd-tr{
-  border-bottom:1px solid #f8fafc;
-  transition:background 0.15s;
-  animation:sdTrIn 0.3s cubic-bezier(0.22,1,0.36,1) both;
-}
-.sd-tr:hover{background:#fafafa;}
-.sd-tr td{padding:12px 16px;vertical-align:middle;}
-.sd-td-num{
-  font-size:12px;font-weight:700;color:#94a3b8;
-  width:40px;text-align:center;
-}
-.sd-td-rep{display:flex;align-items:center;gap:10px;}
-.sd-td-ava{
-  width:34px;height:34px;border-radius:10px;flex-shrink:0;
-  background:linear-gradient(135deg,#059669,#34d399);
+.pd-header-ico{
+  width:46px;height:46px;border-radius:13px;flex-shrink:0;
+  background:linear-gradient(135deg,#ede9fe,#ddd6fe);
+  border:1px solid rgba(99,102,241,0.2);
   display:flex;align-items:center;justify-content:center;
-  font-size:14px;font-weight:800;color:#fff;
 }
-.sd-td-rep-name{font-size:14px;font-weight:700;color:#1e293b;}
+.pd-title{font-size:16px;font-weight:900;color:#1e293b;margin-bottom:2px;letter-spacing:-0.3px;}
+.pd-subtitle{font-size:12px;color:#94a3b8;font-weight:400;}
+.pd-options{display:flex;flex-direction:column;padding:14px 16px;gap:8px;}
+.pd-opt{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 16px;border-radius:14px;border:none;
+  cursor:pointer;transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  text-align:right;width:100%;
+  animation:pdOptIn 0.3s cubic-bezier(0.22,1,0.36,1) both;
+}
+.pd-opt:nth-child(1){animation-delay:0.05s;}
+.pd-opt:nth-child(2){animation-delay:0.1s;}
+.pd-opt:nth-child(3){animation-delay:0.15s;}
+.pd-opt--dep{background:#f0fdf4;border:1.5px solid #bbf7d0;}
+.pd-opt--dep:hover{background:#dcfce7;border-color:#059669;transform:translateX(-4px) scale(1.01);box-shadow:0 6px 20px rgba(5,150,105,0.18);}
+.pd-opt--wth{background:#fef2f2;border:1.5px solid #fecaca;}
+.pd-opt--wth:hover{background:#fee2e2;border-color:#dc2626;transform:translateX(-4px) scale(1.01);box-shadow:0 6px 20px rgba(220,38,38,0.18);}
+.pd-opt--all{background:#f5f3ff;border:1.5px solid #ddd6fe;}
+.pd-opt--all:hover{background:#ede9fe;border-color:#4f46e5;transform:translateX(-4px) scale(1.01);box-shadow:0 6px 20px rgba(79,70,229,0.18);}
+.pd-opt-ico{width:46px;height:46px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.pd-opt-ico--dep{background:#d1fae5;}
+.pd-opt-ico--wth{background:#fee2e2;}
+.pd-opt-ico--all{background:#ede9fe;}
+.pd-opt-body{display:flex;flex-direction:column;gap:3px;flex:1;text-align:right;}
+.pd-opt-title{font-size:14px;font-weight:800;color:#1e293b;}
+.pd-opt-desc{font-size:11px;color:#94a3b8;font-weight:400;line-height:1.4;}
+.pd-opt-arrow{font-size:12px;color:#cbd5e1;flex-shrink:0;transition:all 0.2s;}
+.pd-opt:hover .pd-opt-arrow{color:#475569;transform:translateX(-3px);}
+.pd-cancel{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  width:calc(100% - 32px);margin:0 16px 16px;padding:11px;
+  border-radius:11px;background:#f8fafc;border:1.5px solid #e2e8f0;
+  color:#64748b;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;
+}
+.pd-cancel:hover{background:#f1f5f9;color:#1e293b;border-color:#cbd5e1;}
 
-.sd-amount{
-  display:inline-flex;align-items:center;
-  padding:4px 10px;border-radius:7px;
-  font-size:13px;font-weight:700;
-}
-.sd-amount--purple{background:#f5f3ff;color:#4f46e5;}
-.sd-amount--teal{background:#f0fdf4;color:#059669;}
-.sd-amount--amber{background:#fffbeb;color:#d97706;}
-.sd-amount--bold{font-size:14px !important;padding:6px 12px !important;}
+/* Shared */
+.back-btn{display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:9px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.85);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.back-btn:hover{background:rgba(255,255,255,0.2);}
+.warn-box{display:flex;align-items:center;gap:7px;padding:10px 14px;border-radius:9px;background:#fffbeb;border:1px solid #fef3c7;font-size:13px;color:#92400e;}
+.btn-green{display:flex;align-items:center;gap:7px;padding:11px 18px;border-radius:11px;border:none;background:linear-gradient(135deg,#059669,#10b981);color:#fff;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 12px rgba(5,150,105,0.3);transition:all 0.2s;white-space:nowrap;}
+.btn-green:hover:not(:disabled){transform:translateY(-2px);}
+.btn-green:disabled{opacity:0.6;cursor:not-allowed;}
+.inp{width:100%;padding:11px 12px;border:none;background:transparent;font-size:14px;color:#1e293b;text-align:right;border-radius:11px;}
+.inp:focus{outline:none;}
 
-.sd-edit-inp{
-  width:100%;padding:7px 10px;border-radius:8px;
-  font-size:13px;color:#1e293b;text-align:right;
+/* RESPONSIVE */
+@media(max-width:900px){
+  .sl-stats{display:grid;grid-template-columns:repeat(3,1fr);}
+  .ep-net-bar,.sd-net-bar{display:grid;grid-template-columns:repeat(2,1fr);}
+  .sd-net-amounts{grid-template-columns:1fr 1fr 1fr;}
 }
-.sd-edit-inp--purple{border:1.5px solid #818cf8;background:#f5f3ff;}
-.sd-edit-inp--purple:focus{outline:none;box-shadow:0 0 0 3px rgba(129,140,248,0.15);}
-.sd-edit-inp--teal{border:1.5px solid #34d399;background:#f0fdf4;}
-.sd-edit-inp--teal:focus{outline:none;box-shadow:0 0 0 3px rgba(52,211,153,0.15);}
-.sd-edit-inp--amber{border:1.5px solid #fbbf24;background:#fffbeb;}
-.sd-edit-inp--amber:focus{outline:none;box-shadow:0 0 0 3px rgba(251,191,36,0.15);}
-
-.sd-td-actions{display:flex;gap:6px;align-items:center;}
-.sd-act-btn{
-  width:30px;height:30px;border-radius:8px;border:none;
-  display:flex;align-items:center;justify-content:center;
-  font-size:12px;cursor:pointer;transition:all 0.2s;
+@media(max-width:640px){
+  .sl-stats{grid-template-columns:repeat(2,1fr);}
+  .sl-body,.sd-body,.ep-body{padding:12px 12px;}
+  .sl-form{grid-template-columns:1fr 1fr;gap:8px;}
+  .sl-form>button{grid-column:span 2;}
+  .sd-summary-grid{grid-template-columns:1fr;}
+  .sd-net-amounts{grid-template-columns:1fr 1fr;}
+  .sd-quick-actions{flex-direction:column;}
+  .ep-form-grid{grid-template-columns:1fr 1fr;gap:8px;}
+  .ep-field--note{grid-column:span 2;}
+  .ep-field--submit{grid-column:span 2;}
+  .ep-submit{width:100%;}
+  .ep-net-bar{grid-template-columns:repeat(2,1fr);}
+  .ep-totals-strip{gap:6px;}
 }
-.sd-act-btn--edit{background:#f5f3ff;color:#4f46e5;}
-.sd-act-btn--edit:hover{background:#ede9fe;transform:scale(1.1);}
-.sd-act-btn--del{background:#fef2f2;color:#ef4444;}
-.sd-act-btn--del:hover:not(:disabled){background:#fee2e2;transform:scale(1.1);}
-.sd-act-btn--del:disabled{opacity:0.6;cursor:not-allowed;}
-.sd-act-btn--save{background:linear-gradient(135deg,#059669,#10b981);color:#fff;}
-.sd-act-btn--save:hover{transform:scale(1.1);}
-.sd-act-btn--cancel{background:#f8fafc;color:#94a3b8;border:1px solid #e2e8f0;}
-
-.sd-tfoot-row td{
-  padding:13px 16px;
-  background:#f8fafc;
-  border-top:2px solid #e2e8f0;
-  font-weight:700;
-}
-.sd-tfoot-label{font-size:13px;font-weight:800;color:#1e293b;display:flex;align-items:center;}
-
-/* Spinners */
-.sl-spinner,.sd-spinner{
-  width:16px;height:16px;
-  border:2.5px solid rgba(255,255,255,0.3);
-  border-top-color:#fff;border-radius:50%;
-  animation:sdSpin 0.7s linear infinite;display:inline-block;
-}
-.sl-spinner--red,.sd-spinner--red{border:2px solid rgba(239,68,68,0.2);border-top-color:#ef4444;}
-.sd-spinner--sm{width:14px;height:14px;border-width:2px;}
-
-/* Responsive */
-@media(max-width:768px){
-  .sl-stats-bar{flex-wrap:wrap;}
-  .sl-stat{flex:0 0 50%;border-bottom:1px solid rgba(255,255,255,0.08);}
-  .sl-body,.sd-body{padding:16px 14px;}
-  .sl-header-body,.sd-header-body{padding:18px 16px 12px;}
-  .sl-form{grid-template-columns:1fr;}
-  .sl-submit-btn{grid-column:span 1;}
-  .sd-currencies{grid-template-columns:1fr;}
-  .sd-totals-bar{flex-wrap:wrap;}
-  .sd-total-chip{flex:0 0 50%;}
-  .sd-table thead th:nth-child(1){display:none;}
-  .sd-tr td:nth-child(1){display:none;}
-}
-@media(max-width:480px){
-  .sl-stat{flex:0 0 100%;}
-  .sd-total-chip{flex:0 0 100%;}
-  .sd-header-actions span{display:none;}
-  .sd-action-btn{padding:8px 12px;}
-}
+@media(max-width:400px){
+  .sl-stats{grid-template-columns:1fr 1fr;}
+  .ep-form-grid,.sd-net-amounts{grid-template-columns:1fr;}
+  .ep-field--note,.ep-field--submit{grid-column:span 1;}
+};
 `;
