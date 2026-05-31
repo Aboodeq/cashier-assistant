@@ -11,6 +11,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
+import ConfirmDeleteDialog from "../components/ConfirmDeleteDialog";
 
 export default function Sessions() {
   const [view, setView] = useState("list");
@@ -55,6 +56,7 @@ function SessionList({ onOpen }) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [filterCo, setFilterCo] = useState("");
   const uid = auth.currentUser?.uid;
 
@@ -98,13 +100,19 @@ function SessionList({ onOpen }) {
     setLoading(false);
   };
 
-  const handleDelete = async (id, e) => {
-    e.stopPropagation();
-    setDeleting(id);
-    const snap = await getDocs(collection(db, "users", uid, "sessions", id, "entries"));
-    await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
-    await deleteDoc(doc(db, "users", uid, "sessions", id));
-    setDeleting(null);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(deleteTarget.id);
+    try {
+      const snap = await getDocs(
+        collection(db, "users", uid, "sessions", deleteTarget.id, "entries"),
+      );
+      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+      await deleteDoc(doc(db, "users", uid, "sessions", deleteTarget.id));
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(null);
+    }
   };
 
   const filtered = sessions.filter((s) => (filterCo ? s.companyId === filterCo : true));
@@ -317,7 +325,10 @@ function SessionList({ onOpen }) {
                   </div>
                   <button
                     className="del-btn"
-                    onClick={(e) => handleDelete(s.id, e)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTarget(s);
+                    }}
                     disabled={deleting === s.id}
                   >
                     {deleting === s.id ? <Spin red /> : <i className="fa-solid fa-trash" />}
@@ -368,6 +379,15 @@ function SessionList({ onOpen }) {
             ))}
           </div>
         )}
+        <ConfirmDeleteDialog
+          open={Boolean(deleteTarget)}
+          title="تأكيد حذف الجلسة"
+          message={`سيتم حذف جلسة "${deleteTarget?.label || ""}" مع كل الإدخالات المرتبطة بها.`}
+          confirmLabel="حذف الجلسة"
+          loading={Boolean(deleteTarget && deleting === deleteTarget.id)}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={handleDelete}
+        />
       </div>
     </div>
   );
@@ -578,12 +598,14 @@ function EntriesPage({ session, onBack, defaultTab }) {
   const [reps, setReps] = useState([]);
   const [tab, setTab] = useState(defaultTab || "deposit");
   const [repId, setRepId] = useState("");
+  const [withdrawalName, setWithdrawalName] = useState("");
   const [newSYP, setNewSYP] = useState("");
   const [oldSYP, setOldSYP] = useState("");
   const [usd, setUsd] = useState("");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [editId, setEditId] = useState(null);
   const [editData, setEditData] = useState({});
   const [printDialog, setPrintDialog] = useState(false);
@@ -640,12 +662,14 @@ function EntriesPage({ session, onBack, defaultTab }) {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!repId) return;
+    const isWithdrawal = tab === "withdrawal";
+    const typedName = withdrawalName.trim();
+    if (isWithdrawal ? !typedName : !repId) return;
     setLoading(true);
-    const rep = reps.find((r) => r.id === repId);
+    const rep = isWithdrawal ? null : reps.find((r) => r.id === repId);
     const entry = {
-      repId,
-      repName: rep?.name || "",
+      repId: isWithdrawal ? "" : repId,
+      repName: isWithdrawal ? typedName : rep?.name || "",
       type: tab,
       newSYP: Number(newSYP) || 0,
       oldSYP: Number(oldSYP) || 0,
@@ -656,6 +680,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
     await addDoc(collection(db, "users", uid, "sessions", session.id, "entries"), entry);
     await syncTotals([...entries, entry]);
     setRepId("");
+    setWithdrawalName("");
     setNewSYP("");
     setOldSYP("");
     setUsd("");
@@ -663,12 +688,17 @@ function EntriesPage({ session, onBack, defaultTab }) {
     setLoading(false);
   };
 
-  const handleDelete = async (id) => {
-    setDeleting(id);
-    await deleteDoc(doc(db, "users", uid, "sessions", session.id, "entries", id));
-    const updated = entries.filter((e) => e.id !== id);
-    await syncTotals(updated);
-    setDeleting(null);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(deleteTarget.id);
+    try {
+      await deleteDoc(doc(db, "users", uid, "sessions", session.id, "entries", deleteTarget.id));
+      const updated = entries.filter((e) => e.id !== deleteTarget.id);
+      await syncTotals(updated);
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(null);
+    }
   };
 
   const handleEdit = async (id) => {
@@ -749,6 +779,11 @@ function EntriesPage({ session, onBack, defaultTab }) {
           .ps-lbl{font-size:10px;font-weight:600;color:#475569;}
           .ps-val{font-size:18px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;}
           .ps-sub{font-size:9px;color:#94a3b8;font-weight:500;}
+          .ps-net{margin-top:4px;padding-top:6px;border-top:1px solid rgba(15,23,42,0.08);font-size:9px;color:#64748b;font-weight:700;}
+          .ps-net-val{font-size:11px;font-weight:900;margin-right:4px;}
+          .ps-net-val--pos{color:#059669;}
+          .ps-net-val--neg{color:#dc2626;}
+          .ps-net-val--zero{color:#94a3b8;}
 
           /* ── section divider ── */
           .sec-hdr{
@@ -867,6 +902,8 @@ function EntriesPage({ session, onBack, defaultTab }) {
     if (val > 0) return `+${prefix}${s}`;
     return `${prefix}${s}`;
   };
+  const netTone = (val) =>
+    val > 0 ? "ps-net-val--pos" : val < 0 ? "ps-net-val--neg" : "ps-net-val--zero";
 
   return (
     <div className="ep-root">
@@ -957,7 +994,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
             />
             {tab === "deposit" ? "تسجيل إيداع جديد" : "تسجيل سحب جديد"}
           </div>
-          {companyReps.length === 0 ? (
+          {tab === "deposit" && companyReps.length === 0 ? (
             <div className="warn-box">
               <i className="fa-solid fa-triangle-exclamation" />
               لا يوجد مناديب لهذه الشركة
@@ -968,26 +1005,37 @@ function EntriesPage({ session, onBack, defaultTab }) {
                 <div className="ep-field">
                   <label className="ep-lbl">
                     <i className="fa-solid fa-user" />
-                    المندوب
+                    {tab === "deposit" ? "المندوب" : "الاسم"}
                   </label>
                   <div
                     className={`ep-inp-wrap ${tab === "deposit" ? "ep-inp-wrap--dep" : "ep-inp-wrap--wth"}`}
                   >
                     <i className="fa-solid fa-user ep-ico" />
-                    <select
-                      className="ep-inp"
-                      value={repId}
-                      onChange={(e) => setRepId(e.target.value)}
-                      required
-                      style={{ appearance: "none", cursor: "pointer", paddingRight: 34 }}
-                    >
-                      <option value="">اختر المندوب...</option>
-                      {companyReps.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                    </select>
+                    {tab === "deposit" ? (
+                      <select
+                        className="ep-inp"
+                        value={repId}
+                        onChange={(e) => setRepId(e.target.value)}
+                        required
+                        style={{ appearance: "none", cursor: "pointer", paddingRight: 34 }}
+                      >
+                        <option value="">اختر المندوب...</option>
+                        {companyReps.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        className="ep-inp"
+                        value={withdrawalName}
+                        onChange={(e) => setWithdrawalName(e.target.value)}
+                        placeholder="اكتب الاسم..."
+                        required
+                        style={{ paddingRight: 34 }}
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="ep-field">
@@ -1065,7 +1113,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
                   <button
                     type="submit"
                     className={`ep-submit ${tab === "deposit" ? "ep-submit--dep" : "ep-submit--wth"}`}
-                    disabled={loading || !repId}
+                    disabled={loading || (tab === "deposit" ? !repId : !withdrawalName.trim())}
                   >
                     {loading ? (
                       <>
@@ -1145,7 +1193,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
                 <thead>
                   <tr>
                     <th style={{ width: 36 }}>#</th>
-                    <th>المندوب</th>
+                    <th>{tab === "deposit" ? "المندوب" : "الاسم"}</th>
                     <th>ل.س جديد</th>
                     <th>ل.س قديم</th>
                     <th>دولار</th>
@@ -1271,7 +1319,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
                               </button>
                               <button
                                 className="act-btn act-btn--del"
-                                onClick={() => handleDelete(e.id)}
+                                onClick={() => setDeleteTarget(e)}
                                 disabled={deleting === e.id}
                               >
                                 {deleting === e.id ? (
@@ -1323,6 +1371,16 @@ function EntriesPage({ session, onBack, defaultTab }) {
         )}
         <div style={{ height: 40 }} />
       </div>
+
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title={`تأكيد حذف ${deleteTarget?.type === "withdrawal" ? "السحب" : "الإيداع"}`}
+        message={`سيتم حذف هذا الإدخال${deleteTarget?.repName ? ` باسم "${deleteTarget.repName}"` : ""}.`}
+        confirmLabel="حذف الإدخال"
+        loading={Boolean(deleteTarget && deleting === deleteTarget.id)}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
 
       {/* ════ PRINT DIALOG ════ */}
       {printDialog && (
@@ -1423,7 +1481,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
               <div className="ph-brand">
                 <div className="ph-brand-ico">💼</div>
                 <div>
-                  <div className="ph-brand-name">مساعد الصندوق</div>
+                  <div className="ph-brand-name">cashier assistant</div>
                   <div className="ph-brand-sub">نظام إدارة الإيرادات المتكامل</div>
                 </div>
               </div>
@@ -1467,16 +1525,40 @@ function EntriesPage({ session, onBack, defaultTab }) {
                     <div className="ps-lbl">إجمالي ل.س جديد</div>
                     <div className="ps-val">{pDT.newSYP.toLocaleString()}</div>
                     <div className="ps-sub">ليرة سورية جديدة</div>
+                    {printMode !== "all" && (
+                      <div className="ps-net">
+                        الصافي بعد السحب:
+                        <span className={`ps-net-val ${netTone(nT.newSYP)}`}>
+                          {fmtNet(nT.newSYP)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="ps-box ps-box--dep">
                     <div className="ps-lbl">إجمالي ل.س قديم</div>
                     <div className="ps-val">{pDT.oldSYP.toLocaleString()}</div>
                     <div className="ps-sub">ليرة سورية قديمة</div>
+                    {printMode !== "all" && (
+                      <div className="ps-net">
+                        الصافي بعد السحب:
+                        <span className={`ps-net-val ${netTone(nT.oldSYP)}`}>
+                          {fmtNet(nT.oldSYP)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="ps-box ps-box--dep">
                     <div className="ps-lbl">إجمالي دولار</div>
                     <div className="ps-val">${pDT.usd.toLocaleString()}</div>
                     <div className="ps-sub">دولار أمريكي</div>
+                    {printMode !== "all" && (
+                      <div className="ps-net">
+                        الصافي بعد السحب:
+                        <span className={`ps-net-val ${netTone(nT.usd)}`}>
+                          {fmtNet(nT.usd, "$")}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1490,16 +1572,40 @@ function EntriesPage({ session, onBack, defaultTab }) {
                     <div className="ps-lbl">إجمالي ل.س جديد</div>
                     <div className="ps-val">{pWT.newSYP.toLocaleString()}</div>
                     <div className="ps-sub">ليرة سورية جديدة</div>
+                    {printMode !== "all" && (
+                      <div className="ps-net">
+                        الصافي بعد السحب:
+                        <span className={`ps-net-val ${netTone(nT.newSYP)}`}>
+                          {fmtNet(nT.newSYP)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="ps-box ps-box--wth">
                     <div className="ps-lbl">إجمالي ل.س قديم</div>
                     <div className="ps-val">{pWT.oldSYP.toLocaleString()}</div>
                     <div className="ps-sub">ليرة سورية قديمة</div>
+                    {printMode !== "all" && (
+                      <div className="ps-net">
+                        الصافي بعد السحب:
+                        <span className={`ps-net-val ${netTone(nT.oldSYP)}`}>
+                          {fmtNet(nT.oldSYP)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="ps-box ps-box--wth">
                     <div className="ps-lbl">إجمالي دولار</div>
                     <div className="ps-val">${pWT.usd.toLocaleString()}</div>
                     <div className="ps-sub">دولار أمريكي</div>
+                    {printMode !== "all" && (
+                      <div className="ps-net">
+                        الصافي بعد السحب:
+                        <span className={`ps-net-val ${netTone(nT.usd)}`}>
+                          {fmtNet(nT.usd, "$")}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1591,7 +1697,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
                     <thead>
                       <tr>
                         <th>#</th>
-                        <th>المندوب</th>
+                        <th>الاسم</th>
                         <th>ل.س جديد</th>
                         <th>ل.س قديم</th>
                         <th>دولار</th>
@@ -1686,7 +1792,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
             <div className="pf">
               <div className="pf-left">
                 تاريخ الطباعة:{" "}
-                {new Date().toLocaleDateString("ar-SY", {
+                {new Date().toLocaleDateString("en-us", {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -1694,7 +1800,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
                   minute: "2-digit",
                 })}
               </div>
-              <div className="pf-right">مساعد الصندوق — جميع الحقوق محفوظة</div>
+              <div className="pf-right">Cashier assistant - all rights reserved</div>
             </div>
           </div>
         </div>
