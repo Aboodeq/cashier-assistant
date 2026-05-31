@@ -70,7 +70,7 @@ export default function Dashboard() {
               </div>
               {!collapsed && (
                 <div className="sh-sb-logo-text">
-                  <span className="sh-sb-logo-name">مساعد الصندوق</span>
+                  <span className="sh-sb-logo-name">Cashier Assistant</span>
                   <span className="sh-sb-logo-sub">
                     <span className="sh-sb-online" />
                     متصل
@@ -258,7 +258,7 @@ function Home({ nav }) {
           <div className="hp-hero-left">
             <div className="hp-hero-badge">
               <span className="hp-hero-badge-dot" />
-              لوحة تحكم مساعد الصندوق
+              Cashier Assistant - control panel
             </div>
             <h1 className="hp-hero-h1">
               أهلاً،
@@ -286,7 +286,7 @@ function Home({ nav }) {
                   className="fa-solid fa-cash-register"
                   style={{ fontSize: 36, color: "#fff", opacity: 0.9 }}
                 />
-                <div className="hp-hero-card-label">مساعد الصندوق</div>
+                <div className="hp-hero-card-label">Cashier Assistant</div>
                 <div className="hp-hero-card-chips">
                   <span className="hp-chip hp-chip--blue">
                     <i className="fa-solid fa-coins" style={{ fontSize: 10 }} /> ٣ عملات

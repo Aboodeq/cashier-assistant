@@ -147,7 +147,7 @@ export default function Login() {
               <div className="lr-logo-box">
                 <i className="fa-solid fa-cash-register" style={{ fontSize: 24, color: "#fff" }} />
               </div>
-              <span className="lr-logo-label">مساعد الصندوق</span>
+              <span className="lr-logo-label">Cashier Assistant</span>
             </div>
 
             <div className="lr-hero">

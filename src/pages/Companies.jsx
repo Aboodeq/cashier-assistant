@@ -10,6 +10,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
+import ConfirmDeleteDialog from "../components/ConfirmDeleteDialog";
 
 export default function Companies() {
   const [companies, setCompanies] = useState([]);
@@ -18,11 +19,10 @@ export default function Companies() {
   const [editName, setEditName] = useState("");
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [search, setSearch] = useState("");
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     const uid = auth.currentUser?.uid;
     if (!uid) return;
     const q = query(collection(db, "users", uid, "companies"), orderBy("createdAt", "desc"));
@@ -46,11 +46,16 @@ export default function Companies() {
     setLoading(false);
   };
 
-  const handleDelete = async (id) => {
-    setDeleting(id);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(deleteTarget.id);
     const uid = auth.currentUser?.uid;
-    await deleteDoc(doc(db, "users", uid, "companies", id));
-    setDeleting(null);
+    try {
+      await deleteDoc(doc(db, "users", uid, "companies", deleteTarget.id));
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(null);
+    }
   };
 
   const handleEdit = async (id) => {
@@ -216,7 +221,7 @@ export default function Companies() {
                         </button>
                         <button
                           className="cp-btn cp-btn--del"
-                          onClick={() => handleDelete(c.id)}
+                          onClick={() => setDeleteTarget(c)}
                           disabled={deleting === c.id}
                         >
                           {deleting === c.id ? (
@@ -234,6 +239,15 @@ export default function Companies() {
           )}
         </div>
       </div>
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title="تأكيد حذف الشركة"
+        message={`سيتم حذف "${deleteTarget?.name || ""}" من قائمة الشركات.`}
+        confirmLabel="حذف الشركة"
+        loading={Boolean(deleteTarget && deleting === deleteTarget.id)}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
     </>
   );
 }

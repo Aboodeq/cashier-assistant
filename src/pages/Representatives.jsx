@@ -10,6 +10,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
+import ConfirmDeleteDialog from "../components/ConfirmDeleteDialog";
 
 export default function Representatives() {
   const [reps, setReps] = useState([]);
@@ -20,6 +21,7 @@ export default function Representatives() {
   const [editData, setEditData] = useState({ name: "", companyId: "" });
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [search, setSearch] = useState("");
   const [filterCo, setFilterCo] = useState("");
 
@@ -53,10 +55,15 @@ export default function Representatives() {
     setLoading(false);
   };
 
-  const handleDelete = async (id) => {
-    setDeleting(id);
-    await deleteDoc(doc(db, "users", uid, "representatives", id));
-    setDeleting(null);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(deleteTarget.id);
+    try {
+      await deleteDoc(doc(db, "users", uid, "representatives", deleteTarget.id));
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(null);
+    }
   };
 
   const handleEdit = async (id) => {
@@ -283,7 +290,7 @@ export default function Representatives() {
                         </button>
                         <button
                           className="rp-btn rp-btn--del"
-                          onClick={() => handleDelete(r.id)}
+                          onClick={() => setDeleteTarget(r)}
                           disabled={deleting === r.id}
                         >
                           {deleting === r.id ? (
@@ -301,6 +308,15 @@ export default function Representatives() {
           )}
         </div>
       </div>
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title="تأكيد حذف المندوب"
+        message={`سيتم حذف "${deleteTarget?.name || ""}" من قائمة المناديب.`}
+        confirmLabel="حذف المندوب"
+        loading={Boolean(deleteTarget && deleting === deleteTarget.id)}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
     </>
   );
 }

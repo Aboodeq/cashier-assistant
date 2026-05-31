@@ -176,7 +176,7 @@ export default function Register() {
               <div className="rg-logo-box">
                 <i className="fa-solid fa-cash-register" style={{ fontSize: 24, color: "#fff" }} />
               </div>
-              <span className="rg-logo-label">مساعد الصندوق</span>
+              <span className="rg-logo-label">Cashier Assistant</span>
             </div>
 
             <div className="rg-hero">
