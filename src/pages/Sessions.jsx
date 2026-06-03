@@ -87,11 +87,11 @@ function SessionList({ onOpen }) {
       companyName: co?.name || "",
       date,
       createdAt: Date.now(),
-      totalDepNewSYP: 0,
       totalDepOldSYP: 0,
+      totalDepNewSYP: 0,
       totalDepUSD: 0,
-      totalWthNewSYP: 0,
       totalWthOldSYP: 0,
+      totalWthNewSYP: 0,
       totalWthUSD: 0,
       entriesCount: 0,
     });
@@ -117,11 +117,11 @@ function SessionList({ onOpen }) {
 
   const filtered = sessions.filter((s) => (filterCo ? s.companyId === filterCo : true));
   const grand = {
-    depNewSYP: sessions.reduce((a, s) => a + (s.totalDepNewSYP || 0), 0),
     depOldSYP: sessions.reduce((a, s) => a + (s.totalDepOldSYP || 0), 0),
+    depNewSYP: sessions.reduce((a, s) => a + (s.totalDepNewSYP || 0), 0),
     depUSD: sessions.reduce((a, s) => a + (s.totalDepUSD || 0), 0),
-    wthNewSYP: sessions.reduce((a, s) => a + (s.totalWthNewSYP || 0), 0),
     wthOldSYP: sessions.reduce((a, s) => a + (s.totalWthOldSYP || 0), 0),
+    wthNewSYP: sessions.reduce((a, s) => a + (s.totalWthNewSYP || 0), 0),
     wthUSD: sessions.reduce((a, s) => a + (s.totalWthUSD || 0), 0),
   };
 
@@ -147,16 +147,16 @@ function SessionList({ onOpen }) {
         <div className="sl-stats">
           {[
             {
-              lbl: "إيداع ل.س جديد",
-              val: grand.depNewSYP.toLocaleString(),
-              ic: "fa-solid fa-arrow-down",
-              cl: "#a5b4fc",
-            },
-            {
               lbl: "إيداع ل.س قديم",
               val: grand.depOldSYP.toLocaleString(),
               ic: "fa-solid fa-arrow-down",
               cl: "#6ee7b7",
+            },
+            {
+              lbl: "إيداع ل.س جديد",
+              val: grand.depNewSYP.toLocaleString(),
+              ic: "fa-solid fa-arrow-down",
+              cl: "#a5b4fc",
             },
             {
               lbl: "إيداع دولار",
@@ -165,16 +165,16 @@ function SessionList({ onOpen }) {
               cl: "#fcd34d",
             },
             {
-              lbl: "سحب ل.س جديد",
-              val: grand.wthNewSYP.toLocaleString(),
-              ic: "fa-solid fa-arrow-up",
-              cl: "#fca5a5",
-            },
-            {
               lbl: "سحب ل.س قديم",
               val: grand.wthOldSYP.toLocaleString(),
               ic: "fa-solid fa-arrow-up",
               cl: "#fdba74",
+            },
+            {
+              lbl: "سحب ل.س جديد",
+              val: grand.wthNewSYP.toLocaleString(),
+              ic: "fa-solid fa-arrow-up",
+              cl: "#fca5a5",
             },
             {
               lbl: "سحب دولار",
@@ -341,11 +341,11 @@ function SessionList({ onOpen }) {
                       إيداع
                     </div>
                     <div className="amount-chips">
-                      <span className="chip chip--purple">
-                        {(s.totalDepNewSYP || 0).toLocaleString()} <em>جديد</em>
-                      </span>
                       <span className="chip chip--teal">
                         {(s.totalDepOldSYP || 0).toLocaleString()} <em>قديم</em>
+                      </span>
+                      <span className="chip chip--purple">
+                        {(s.totalDepNewSYP || 0).toLocaleString()} <em>جديد</em>
                       </span>
                       <span className="chip chip--amber">
                         ${(s.totalDepUSD || 0).toLocaleString()}
@@ -359,11 +359,11 @@ function SessionList({ onOpen }) {
                       سحب
                     </div>
                     <div className="amount-chips">
-                      <span className="chip chip--red">
-                        {(s.totalWthNewSYP || 0).toLocaleString()} <em>جديد</em>
-                      </span>
                       <span className="chip chip--orange">
                         {(s.totalWthOldSYP || 0).toLocaleString()} <em>قديم</em>
+                      </span>
+                      <span className="chip chip--red">
+                        {(s.totalWthNewSYP || 0).toLocaleString()} <em>جديد</em>
                       </span>
                       <span className="chip chip--pink">
                         ${(s.totalWthUSD || 0).toLocaleString()}
@@ -379,6 +379,7 @@ function SessionList({ onOpen }) {
             ))}
           </div>
         )}
+
         <ConfirmDeleteDialog
           open={Boolean(deleteTarget)}
           title="تأكيد حذف الجلسة"
@@ -415,13 +416,13 @@ function SessionDetail({ session, onBack, onOpenEntries }) {
   const deps = entries.filter((e) => e.type === "deposit");
   const wths = entries.filter((e) => e.type === "withdrawal");
   const calc = (arr) => ({
-    newSYP: arr.reduce((a, e) => a + (Number(e.newSYP) || 0), 0),
     oldSYP: arr.reduce((a, e) => a + (Number(e.oldSYP) || 0), 0),
+    newSYP: arr.reduce((a, e) => a + (Number(e.newSYP) || 0), 0),
     usd: arr.reduce((a, e) => a + (Number(e.usd) || 0), 0),
   });
   const dT = calc(deps);
   const wT = calc(wths);
-  const nT = { newSYP: dT.newSYP - wT.newSYP, oldSYP: dT.oldSYP - wT.oldSYP, usd: dT.usd - wT.usd };
+  const nT = { oldSYP: dT.oldSYP - wT.oldSYP, newSYP: dT.newSYP - wT.newSYP, usd: dT.usd - wT.usd };
 
   return (
     <div className="sd-root">
@@ -455,8 +456,8 @@ function SessionDetail({ session, onBack, onOpenEntries }) {
         </div>
         <div className="sd-net-bar">
           {[
-            { lbl: "صافي ل.س جديد", val: nT.newSYP.toLocaleString(), pos: nT.newSYP >= 0 },
             { lbl: "صافي ل.س قديم", val: nT.oldSYP.toLocaleString(), pos: nT.oldSYP >= 0 },
+            { lbl: "صافي ل.س جديد", val: nT.newSYP.toLocaleString(), pos: nT.newSYP >= 0 },
             { lbl: "صافي دولار", val: `$${nT.usd.toLocaleString()}`, pos: nT.usd >= 0 },
             { lbl: "إيداع / سحب", val: `${deps.length} / ${wths.length}`, neutral: true },
           ].map((n, i) => (
@@ -474,6 +475,7 @@ function SessionDetail({ session, onBack, onOpenEntries }) {
 
       <div className="sd-body">
         <div className="sd-summary-grid">
+          {/* Deposit card */}
           <div className="sd-sum-card sd-sum-card--dep">
             <div className="sd-sum-card-header">
               <div className="sd-sum-card-ico sd-sum-card-ico--dep">
@@ -486,13 +488,43 @@ function SessionDetail({ session, onBack, onOpenEntries }) {
             </div>
             <div className="sd-sum-amounts">
               {[
-                { lbl: "ل.س جديد", val: dT.newSYP.toLocaleString(), cls: "sd-sum-val--purple" },
-                { lbl: "ل.س قديم", val: dT.oldSYP.toLocaleString(), cls: "sd-sum-val--teal" },
-                { lbl: "دولار", val: `$${dT.usd.toLocaleString()}`, cls: "sd-sum-val--amber" },
+                {
+                  lbl: "ل.س قديم",
+                  val: dT.oldSYP.toLocaleString(),
+                  cls: "sd-sum-val--teal",
+                  net: nT.oldSYP,
+                  netPos: nT.oldSYP >= 0,
+                },
+                {
+                  lbl: "ل.س جديد",
+                  val: dT.newSYP.toLocaleString(),
+                  cls: "sd-sum-val--purple",
+                  net: nT.newSYP,
+                  netPos: nT.newSYP >= 0,
+                },
+                {
+                  lbl: "دولار",
+                  val: `$${dT.usd.toLocaleString()}`,
+                  cls: "sd-sum-val--amber",
+                  net: nT.usd,
+                  netPos: nT.usd >= 0,
+                  prefix: "$",
+                },
               ].map((a, i) => (
-                <div key={i} className="sd-sum-amount">
-                  <span className="sd-sum-lbl">{a.lbl}</span>
-                  <span className={`sd-sum-val ${a.cls}`}>{a.val}</span>
+                <div key={i} className="sd-sum-row">
+                  <div className="sd-sum-amount">
+                    <span className="sd-sum-lbl">{a.lbl}</span>
+                    <span className={`sd-sum-val ${a.cls}`}>{a.val}</span>
+                  </div>
+                  <div className={`sd-sum-net ${a.netPos ? "sd-sum-net--pos" : "sd-sum-net--neg"}`}>
+                    <i
+                      className={`fa-solid fa-${a.netPos ? "arrow-trend-up" : "arrow-trend-down"}`}
+                      style={{ fontSize: 9 }}
+                    />
+                    صافي: {a.netPos && a.net !== 0 ? "+" : ""}
+                    {a.prefix || ""}
+                    {a.net.toLocaleString()}
+                  </div>
                 </div>
               ))}
             </div>
@@ -509,6 +541,7 @@ function SessionDetail({ session, onBack, onOpenEntries }) {
             </button>
           </div>
 
+          {/* Withdrawal card */}
           <div className="sd-sum-card sd-sum-card--wth">
             <div className="sd-sum-card-header">
               <div className="sd-sum-card-ico sd-sum-card-ico--wth">
@@ -521,13 +554,43 @@ function SessionDetail({ session, onBack, onOpenEntries }) {
             </div>
             <div className="sd-sum-amounts">
               {[
-                { lbl: "ل.س جديد", val: wT.newSYP.toLocaleString(), cls: "sd-sum-val--red" },
-                { lbl: "ل.س قديم", val: wT.oldSYP.toLocaleString(), cls: "sd-sum-val--orange" },
-                { lbl: "دولار", val: `$${wT.usd.toLocaleString()}`, cls: "sd-sum-val--pink" },
+                {
+                  lbl: "ل.س قديم",
+                  val: wT.oldSYP.toLocaleString(),
+                  cls: "sd-sum-val--orange",
+                  net: nT.oldSYP,
+                  netPos: nT.oldSYP >= 0,
+                },
+                {
+                  lbl: "ل.س جديد",
+                  val: wT.newSYP.toLocaleString(),
+                  cls: "sd-sum-val--red",
+                  net: nT.newSYP,
+                  netPos: nT.newSYP >= 0,
+                },
+                {
+                  lbl: "دولار",
+                  val: `$${wT.usd.toLocaleString()}`,
+                  cls: "sd-sum-val--pink",
+                  net: nT.usd,
+                  netPos: nT.usd >= 0,
+                  prefix: "$",
+                },
               ].map((a, i) => (
-                <div key={i} className="sd-sum-amount">
-                  <span className="sd-sum-lbl">{a.lbl}</span>
-                  <span className={`sd-sum-val ${a.cls}`}>{a.val}</span>
+                <div key={i} className="sd-sum-row">
+                  <div className="sd-sum-amount">
+                    <span className="sd-sum-lbl">{a.lbl}</span>
+                    <span className={`sd-sum-val ${a.cls}`}>{a.val}</span>
+                  </div>
+                  <div className={`sd-sum-net ${a.netPos ? "sd-sum-net--pos" : "sd-sum-net--neg"}`}>
+                    <i
+                      className={`fa-solid fa-${a.netPos ? "arrow-trend-up" : "arrow-trend-down"}`}
+                      style={{ fontSize: 9 }}
+                    />
+                    صافي: {a.netPos && a.net !== 0 ? "+" : ""}
+                    {a.prefix || ""}
+                    {a.net.toLocaleString()}
+                  </div>
                 </div>
               ))}
             </div>
@@ -545,6 +608,7 @@ function SessionDetail({ session, onBack, onOpenEntries }) {
           </div>
         </div>
 
+        {/* Net card */}
         <div className="sd-net-card">
           <div className="sd-net-card-title">
             <i className="fa-solid fa-scale-balanced" style={{ color: "#818cf8", fontSize: 15 }} />
@@ -552,8 +616,8 @@ function SessionDetail({ session, onBack, onOpenEntries }) {
           </div>
           <div className="sd-net-amounts">
             {[
-              { lbl: "صافي ل.س جديد", val: nT.newSYP.toLocaleString(), pos: nT.newSYP >= 0 },
               { lbl: "صافي ل.س قديم", val: nT.oldSYP.toLocaleString(), pos: nT.oldSYP >= 0 },
+              { lbl: "صافي ل.س جديد", val: nT.newSYP.toLocaleString(), pos: nT.newSYP >= 0 },
               { lbl: "صافي دولار", val: `$${nT.usd.toLocaleString()}`, pos: nT.usd >= 0 },
             ].map((n, i) => (
               <div key={i} className="sd-net-amount">
@@ -599,8 +663,8 @@ function EntriesPage({ session, onBack, defaultTab }) {
   const [tab, setTab] = useState(defaultTab || "deposit");
   const [repId, setRepId] = useState("");
   const [withdrawalName, setWithdrawalName] = useState("");
-  const [newSYP, setNewSYP] = useState("");
   const [oldSYP, setOldSYP] = useState("");
+  const [newSYP, setNewSYP] = useState("");
   const [usd, setUsd] = useState("");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
@@ -612,6 +676,8 @@ function EntriesPage({ session, onBack, defaultTab }) {
   const [printMode, setPrintMode] = useState(null);
   const printRef = useRef(null);
   const uid = auth.currentUser?.uid;
+  const printUserName =
+    auth.currentUser?.displayName || auth.currentUser?.email?.split("@")[0] || "";
 
   useEffect(() => {
     if (!uid || !session) return;
@@ -637,24 +703,24 @@ function EntriesPage({ session, onBack, defaultTab }) {
   const wths = entries.filter((e) => e.type === "withdrawal");
   const shown = tab === "deposit" ? deps : wths;
   const calc = (arr) => ({
-    newSYP: arr.reduce((a, e) => a + (Number(e.newSYP) || 0), 0),
     oldSYP: arr.reduce((a, e) => a + (Number(e.oldSYP) || 0), 0),
+    newSYP: arr.reduce((a, e) => a + (Number(e.newSYP) || 0), 0),
     usd: arr.reduce((a, e) => a + (Number(e.usd) || 0), 0),
   });
   const curT = calc(shown);
   const dT = calc(deps);
   const wT = calc(wths);
-  const nT = { newSYP: dT.newSYP - wT.newSYP, oldSYP: dT.oldSYP - wT.oldSYP, usd: dT.usd - wT.usd };
+  const nT = { oldSYP: dT.oldSYP - wT.oldSYP, newSYP: dT.newSYP - wT.newSYP, usd: dT.usd - wT.usd };
 
   const syncTotals = async (updated) => {
     const d = calc(updated.filter((e) => e.type === "deposit"));
     const w = calc(updated.filter((e) => e.type === "withdrawal"));
     await updateDoc(doc(db, "users", uid, "sessions", session.id), {
-      totalDepNewSYP: d.newSYP,
       totalDepOldSYP: d.oldSYP,
+      totalDepNewSYP: d.newSYP,
       totalDepUSD: d.usd,
-      totalWthNewSYP: w.newSYP,
       totalWthOldSYP: w.oldSYP,
+      totalWthNewSYP: w.newSYP,
       totalWthUSD: w.usd,
       entriesCount: updated.length,
     });
@@ -662,17 +728,17 @@ function EntriesPage({ session, onBack, defaultTab }) {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    const isWithdrawal = tab === "withdrawal";
+    const isWth = tab === "withdrawal";
     const typedName = withdrawalName.trim();
-    if (isWithdrawal ? !typedName : !repId) return;
+    if (isWth ? !typedName : !repId) return;
     setLoading(true);
-    const rep = isWithdrawal ? null : reps.find((r) => r.id === repId);
+    const rep = isWth ? null : reps.find((r) => r.id === repId);
     const entry = {
-      repId: isWithdrawal ? "" : repId,
-      repName: isWithdrawal ? typedName : rep?.name || "",
+      repId: isWth ? "" : repId,
+      repName: isWth ? typedName : rep?.name || "",
       type: tab,
-      newSYP: Number(newSYP) || 0,
       oldSYP: Number(oldSYP) || 0,
+      newSYP: Number(newSYP) || 0,
       usd: Number(usd) || 0,
       note: note.trim(),
       createdAt: Date.now(),
@@ -681,8 +747,8 @@ function EntriesPage({ session, onBack, defaultTab }) {
     await syncTotals([...entries, entry]);
     setRepId("");
     setWithdrawalName("");
-    setNewSYP("");
     setOldSYP("");
+    setNewSYP("");
     setUsd("");
     setNote("");
     setLoading(false);
@@ -703,8 +769,8 @@ function EntriesPage({ session, onBack, defaultTab }) {
 
   const handleEdit = async (id) => {
     await updateDoc(doc(db, "users", uid, "sessions", session.id, "entries", id), {
-      newSYP: Number(editData.newSYP) || 0,
       oldSYP: Number(editData.oldSYP) || 0,
+      newSYP: Number(editData.newSYP) || 0,
       usd: Number(editData.usd) || 0,
       note: editData.note || "",
     });
@@ -713,14 +779,51 @@ function EntriesPage({ session, onBack, defaultTab }) {
         ? {
             ...e,
             ...editData,
-            newSYP: Number(editData.newSYP) || 0,
             oldSYP: Number(editData.oldSYP) || 0,
+            newSYP: Number(editData.newSYP) || 0,
             usd: Number(editData.usd) || 0,
           }
         : e,
     );
     await syncTotals(updated);
     setEditId(null);
+  };
+
+  const money = (val) => (Number(val) || 0).toLocaleString();
+  const reportDate = () => {
+    const d = new Date();
+    return `${d.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })} - ${d.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    })}`;
+  };
+  const entryDate = (entry) => {
+    const raw = entry?.createdAt;
+    const d =
+      typeof raw === "number"
+        ? new Date(raw)
+        : raw?.toDate
+          ? raw.toDate()
+          : raw
+            ? new Date(raw)
+            : null;
+    return d && !Number.isNaN(d.getTime()) ? d.toISOString().split("T")[0] : session.date || "-";
+  };
+  const printTitle = () => {
+    const base = printMode === "withdrawal" ? "كشف السحوبات" : "كشف أموال المندوبين";
+    return `${base} - ${session.companyName}`;
+  };
+  const amountLines = (entry) => {
+    const lines = [];
+    if (Number(entry.oldSYP) > 0) lines.push({ amount: money(entry.oldSYP), unit: "ل.س قديمة" });
+    if (Number(entry.newSYP) > 0) lines.push({ amount: money(entry.newSYP), unit: "ل.س جديدة" });
+    if (Number(entry.usd) > 0) lines.push({ amount: money(entry.usd), unit: "دولار أمريكي" });
+    return lines.length ? lines : [{ amount: "0", unit: "" }];
   };
 
   const handlePrint = (mode) => {
@@ -735,141 +838,41 @@ function EntriesPage({ session, onBack, defaultTab }) {
         <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
         <style>
           *{margin:0;padding:0;box-sizing:border-box;}
-          html,body{font-family:'Tajawal',sans-serif;direction:rtl;background:#fff;color:#0f172a;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-
-          /* ── page wrapper ── */
-          .page{max-width:210mm;margin:0 auto;padding:28px 32px;}
-
-          /* ── header ── */
-          .ph{
-            display:flex;align-items:center;justify-content:space-between;
-            margin-bottom:28px;padding-bottom:20px;
-            border-bottom:2px solid #e2e8f0;
-          }
-          .ph-brand{display:flex;align-items:center;gap:12px;}
-          .ph-brand-ico{
-            width:44px;height:44px;border-radius:12px;
-            background:linear-gradient(135deg,#1e1b4b,#3730a3);
-            display:flex;align-items:center;justify-content:center;
-            font-size:20px;color:#fff;flex-shrink:0;
-          }
-          .ph-brand-name{font-size:20px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;}
-          .ph-brand-sub{font-size:11px;color:#64748b;font-weight:400;margin-top:1px;}
-          .ph-badge{
-            padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;
-          }
-          .ph-badge--dep{background:#f0fdf4;color:#059669;border:1px solid #bbf7d0;}
-          .ph-badge--wth{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}
-          .ph-badge--all{background:#f5f3ff;color:#4f46e5;border:1px solid #ddd6fe;}
-
-          /* ── meta info cards ── */
-          .pi{display:flex;gap:8px;margin-bottom:20px;}
-          .pi-card{flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;}
-          .pi-lbl{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;}
-          .pi-val{font-size:14px;font-weight:800;color:#0f172a;}
-
-          /* ── summary boxes ── */
-          .ps-section{margin-bottom:20px;}
-          .ps-section-title{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;}
-          .ps-grid{display:flex;gap:8px;}
-          .ps-box{flex:1;padding:14px 16px;border-radius:12px;display:flex;flex-direction:column;gap:3px;}
-          .ps-box--dep{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;}
-          .ps-box--wth{background:linear-gradient(135deg,#fef2f2,#fee2e2);border:1px solid #fca5a5;}
-          .ps-box--net{background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:1px solid #c4b5fd;}
-          .ps-lbl{font-size:10px;font-weight:600;color:#475569;}
-          .ps-val{font-size:18px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;}
-          .ps-sub{font-size:9px;color:#94a3b8;font-weight:500;}
-          .ps-net{margin-top:4px;padding-top:6px;border-top:1px solid rgba(15,23,42,0.08);font-size:9px;color:#64748b;font-weight:700;}
-          .ps-net-val{font-size:11px;font-weight:900;margin-right:4px;}
-          .ps-net-val--pos{color:#059669;}
-          .ps-net-val--neg{color:#dc2626;}
-          .ps-net-val--zero{color:#94a3b8;}
-
-          /* ── section divider ── */
-          .sec-hdr{
-            display:flex;align-items:center;gap:10px;
-            margin:24px 0 12px;
-          }
-          .sec-hdr-bar{width:4px;height:18px;border-radius:2px;flex-shrink:0;}
-          .sec-hdr-bar--dep{background:linear-gradient(180deg,#059669,#10b981);}
-          .sec-hdr-bar--wth{background:linear-gradient(180deg,#dc2626,#ef4444);}
-          .sec-hdr-title{font-size:14px;font-weight:800;color:#0f172a;}
-          .sec-hdr-count{
-            margin-right:4px;padding:2px 10px;border-radius:99px;
-            font-size:11px;font-weight:700;
-          }
-          .sec-hdr-count--dep{background:#dcfce7;color:#059669;}
-          .sec-hdr-count--wth{background:#fee2e2;color:#dc2626;}
-
-          /* ── table ── */
-          .tbl-wrap{border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;margin-bottom:8px;}
-          table{width:100%;border-collapse:collapse;}
-          thead tr{background:linear-gradient(135deg,#1e1b4b,#312e81);}
-          th{padding:10px 13px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.9);text-align:right;white-space:nowrap;letter-spacing:0.3px;}
-          td{padding:9px 13px;font-size:12px;border-bottom:1px solid #f1f5f9;color:#334155;vertical-align:middle;}
-          tr:last-child td{border-bottom:none;}
-          tbody tr:nth-child(even) td{background:#fafafa;}
-          .dep-row td:first-child{border-right:3px solid #10b981;}
-          .wth-row td:first-child{border-right:3px solid #ef4444;}
-
-          /* ── rep cell ── */
-          .rep-cell{display:flex;align-items:center;gap:8px;}
-          .rep-ava{
-            width:26px;height:26px;border-radius:7px;flex-shrink:0;
-            display:flex;align-items:center;justify-content:center;
-            font-size:11px;font-weight:800;color:#fff;
-          }
-          .rep-ava--dep{background:linear-gradient(135deg,#059669,#34d399);}
-          .rep-ava--wth{background:linear-gradient(135deg,#dc2626,#f87171);}
-          .rep-name{font-size:12px;font-weight:700;color:#0f172a;}
-
-          /* ── amount badges ── */
-          .amt{display:inline-flex;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:700;white-space:nowrap;}
-          .amt--purple{background:#f5f3ff;color:#4f46e5;}
-          .amt--teal{background:#f0fdf4;color:#059669;}
-          .amt--amber{background:#fffbeb;color:#d97706;}
-          .amt--red{background:#fef2f2;color:#dc2626;}
-          .amt--orange{background:#fff7ed;color:#ea580c;}
-          .amt--pink{background:#fdf2f8;color:#be185d;}
-          .note-cell{font-size:11px;color:#94a3b8;font-style:italic;}
-
-          /* ── totals row ── */
-          .tot-row td{
-            font-weight:800;font-size:13px;
-            background:linear-gradient(135deg,#f8fafc,#f1f5f9) !important;
-            border-top:2px solid #e2e8f0;
-          }
-          .tot-label{font-size:12px;font-weight:800;color:#0f172a;}
-
-          /* ── net summary at bottom ── */
-          .net-section{
-            margin-top:20px;padding:16px 20px;
-            background:linear-gradient(135deg,#f5f3ff,#ede9fe);
-            border:1px solid #c4b5fd;border-radius:14px;
-            display:flex;align-items:center;gap:20px;
-          }
-          .net-section-title{font-size:12px;font-weight:700;color:#4f46e5;white-space:nowrap;}
-          .net-items{display:flex;gap:20px;flex:1;flex-wrap:wrap;}
-          .net-item{display:flex;flex-direction:column;gap:2px;}
-          .net-lbl{font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;}
-          .net-val{font-size:16px;font-weight:900;letter-spacing:-0.5px;}
-          .net-val--pos{color:#059669;}
-          .net-val--neg{color:#dc2626;}
-          .net-val--zero{color:#94a3b8;}
-
-          /* ── footer ── */
-          .pf{
-            margin-top:28px;padding-top:16px;
-            border-top:1px solid #e2e8f0;
-            display:flex;align-items:center;justify-content:space-between;
-          }
-          .pf-left{font-size:11px;color:#94a3b8;}
-          .pf-right{font-size:11px;color:#94a3b8;font-weight:500;}
+          html,body{font-family:'Tajawal',Arial,sans-serif;direction:rtl;background:#fff;color:#2c3e50;font-size:14px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+          .page{width:210mm;min-height:297mm;margin:0 auto;padding:10mm 11mm 15mm;background:#fff;}
+          .pr-title{text-align:center;font-size:27px;font-weight:900;line-height:1.3;color:#2c3e50;margin:0 0 8px;}
+          .pr-date{text-align:center;direction:ltr;color:#666;font-size:16px;line-height:1.4;margin-bottom:36px;}
+          .pr-summary-title{text-align:right;font-size:25px;font-weight:900;line-height:1.25;color:#2c3e50;margin:0 0 16px;}
+          .pr-blue-line{height:2px;background:#3498db;margin-bottom:22px;}
+          .pr-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:32px;}
+          .pr-summary-card{min-height:103px;background:#f8f9fa;border:1px solid #e9edf2;border-right:5px solid #3498db;border-radius:6px;padding:18px 20px 17px;}
+          .pr-summary-name{font-size:17px;font-weight:900;color:#2c3e50;line-height:1.35;margin-bottom:13px;}
+          .pr-summary-line{font-size:15px;color:#000;line-height:1.55;}
+          .pr-summary-line strong{font-weight:500;}
+          .pr-summary-net{font-size:18px;font-weight:900;color:#2c3e50;margin-top:10px;line-height:1.45;}
+          .pr-num{direction:ltr;unicode-bidi:isolate;display:inline-block;}
+          .pr-table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:0;}
+          .pr-table th,.pr-table td{border:1px solid #ddd;text-align:center;vertical-align:middle;}
+          .pr-table th{background:#f8f9fa;color:#000;font-size:14px;font-weight:800;padding:11px 8px;}
+          .pr-table td{color:#000;font-size:13px;line-height:1.55;padding:9px 8px;}
+          .pr-table tr{break-inside:avoid;page-break-inside:avoid;}
+          .pr-col-index{width:34px;}
+          .pr-col-name{width:17%;}
+          .pr-col-date{width:14%;}
+          .pr-col-type{width:15%;}
+          .pr-col-amounts{width:32%;}
+          .pr-col-notes{width:17%;}
+          .pr-amounts{display:flex;flex-direction:column;align-items:center;gap:2px;}
+          .pr-amount-line{display:flex;align-items:baseline;justify-content:center;gap:4px;direction:ltr;white-space:nowrap;}
+          .pr-amount-unit{direction:rtl;}
+          .pr-note{white-space:pre-wrap;word-break:break-word;}
+          .pr-empty{border:1px solid #ddd;background:#fafafa;color:#666;text-align:center;padding:18px;margin-top:0;}
+          .pr-footer{border-top:1px solid #e5e7eb;margin-top:34px;padding-top:18px;text-align:center;color:#666;font-size:12px;}
+          .pr-footer strong{font-size:13px;font-weight:900;color:#3498db;}
 
           @media print{
-            body{padding:0;}
-            .page{padding:16px 20px;max-width:100%;}
-            @page{margin:1cm;size:A4;}
+            @page{size:A4;margin:0;}
+            .page{width:210mm;min-height:297mm;padding:10mm 11mm 15mm;}
           }
         </style>
       </head><body>${content}</body></html>`);
@@ -887,27 +890,10 @@ function EntriesPage({ session, onBack, defaultTab }) {
     : printMode === "all"
       ? entries
       : entries.filter((e) => e.type === printMode);
-  const pDeps = pRows.filter((e) => e.type === "deposit");
-  const pWths = pRows.filter((e) => e.type === "withdrawal");
-  const pDT = calc(pDeps);
-  const pWT = calc(pWths);
-  const pNT = {
-    newSYP: pDT.newSYP - pWT.newSYP,
-    oldSYP: pDT.oldSYP - pWT.oldSYP,
-    usd: pDT.usd - pWT.usd,
-  };
-
-  const fmtNet = (val, prefix = "") => {
-    const s = val.toLocaleString();
-    if (val > 0) return `+${prefix}${s}`;
-    return `${prefix}${s}`;
-  };
-  const netTone = (val) =>
-    val > 0 ? "ps-net-val--pos" : val < 0 ? "ps-net-val--neg" : "ps-net-val--zero";
 
   return (
     <div className="ep-root">
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="ep-header">
         <div className="ep-hbg" />
         <div className="ep-htop">
@@ -940,8 +926,8 @@ function EntriesPage({ session, onBack, defaultTab }) {
         </div>
         <div className="ep-net-bar">
           {[
-            { lbl: "صافي ل.س جديد", val: nT.newSYP.toLocaleString(), pos: nT.newSYP >= 0 },
             { lbl: "صافي ل.س قديم", val: nT.oldSYP.toLocaleString(), pos: nT.oldSYP >= 0 },
+            { lbl: "صافي ل.س جديد", val: nT.newSYP.toLocaleString(), pos: nT.newSYP >= 0 },
             { lbl: "صافي دولار", val: `$${nT.usd.toLocaleString()}`, pos: nT.usd >= 0 },
             { lbl: "إيداع / سحب", val: `${deps.length} / ${wths.length}`, neutral: true },
           ].map((n, i) => (
@@ -957,7 +943,6 @@ function EntriesPage({ session, onBack, defaultTab }) {
         </div>
       </div>
 
-      {/* ── Body ── */}
       <div className="ep-body">
         {/* Tabs */}
         <div className="ep-tabs">
@@ -1002,6 +987,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
           ) : (
             <form onSubmit={handleAdd}>
               <div className="ep-form-grid">
+                {/* Name / Rep field */}
                 <div className="ep-field">
                   <label className="ep-lbl">
                     <i className="fa-solid fa-user" />
@@ -1038,24 +1024,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
                     )}
                   </div>
                 </div>
-                <div className="ep-field">
-                  <label className="ep-lbl">
-                    <span className="dot dot--purple" />
-                    ل.س جديد
-                  </label>
-                  <div
-                    className={`ep-inp-wrap ${tab === "deposit" ? "ep-inp-wrap--purple" : "ep-inp-wrap--red"}`}
-                  >
-                    <input
-                      className="ep-inp"
-                      type="number"
-                      min="0"
-                      placeholder="0"
-                      value={newSYP}
-                      onChange={(e) => setNewSYP(e.target.value)}
-                    />
-                  </div>
-                </div>
+                {/* Old SYP */}
                 <div className="ep-field">
                   <label className="ep-lbl">
                     <span className="dot dot--teal" />
@@ -1074,6 +1043,26 @@ function EntriesPage({ session, onBack, defaultTab }) {
                     />
                   </div>
                 </div>
+                {/* New SYP */}
+                <div className="ep-field">
+                  <label className="ep-lbl">
+                    <span className="dot dot--purple" />
+                    ل.س جديد
+                  </label>
+                  <div
+                    className={`ep-inp-wrap ${tab === "deposit" ? "ep-inp-wrap--purple" : "ep-inp-wrap--red"}`}
+                  >
+                    <input
+                      className="ep-inp"
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={newSYP}
+                      onChange={(e) => setNewSYP(e.target.value)}
+                    />
+                  </div>
+                </div>
+                {/* USD */}
                 <div className="ep-field">
                   <label className="ep-lbl">
                     <span className="dot dot--amber" />
@@ -1092,6 +1081,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
                     />
                   </div>
                 </div>
+                {/* Note */}
                 <div className="ep-field ep-field--note">
                   <label className="ep-lbl">
                     <i className="fa-regular fa-note-sticky" />
@@ -1106,6 +1096,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
                     />
                   </div>
                 </div>
+                {/* Submit */}
                 <div className="ep-field ep-field--submit">
                   <label className="ep-lbl" style={{ opacity: 0 }}>
                     _
@@ -1140,14 +1131,14 @@ function EntriesPage({ session, onBack, defaultTab }) {
           <div className="ep-totals-strip">
             {[
               {
-                lbl: "ل.س جديد",
-                val: curT.newSYP.toLocaleString(),
-                cls: tab === "deposit" ? "et--purple" : "et--red",
-              },
-              {
                 lbl: "ل.س قديم",
                 val: curT.oldSYP.toLocaleString(),
                 cls: tab === "deposit" ? "et--teal" : "et--orange",
+              },
+              {
+                lbl: "ل.س جديد",
+                val: curT.newSYP.toLocaleString(),
+                cls: tab === "deposit" ? "et--purple" : "et--red",
               },
               {
                 lbl: "دولار",
@@ -1194,8 +1185,8 @@ function EntriesPage({ session, onBack, defaultTab }) {
                   <tr>
                     <th style={{ width: 36 }}>#</th>
                     <th>{tab === "deposit" ? "المندوب" : "الاسم"}</th>
-                    <th>ل.س جديد</th>
                     <th>ل.س قديم</th>
+                    <th>ل.س جديد</th>
                     <th>دولار</th>
                     <th>ملاحظة</th>
                     <th style={{ width: 80 }}>إجراءات</th>
@@ -1221,21 +1212,21 @@ function EntriesPage({ session, onBack, defaultTab }) {
                         <>
                           <td>
                             <input
-                              className="td-edit td-edit--purple"
-                              type="number"
-                              value={editData.newSYP}
-                              onChange={(v) =>
-                                setEditData((p) => ({ ...p, newSYP: v.target.value }))
-                              }
-                            />
-                          </td>
-                          <td>
-                            <input
                               className="td-edit td-edit--teal"
                               type="number"
                               value={editData.oldSYP}
                               onChange={(v) =>
                                 setEditData((p) => ({ ...p, oldSYP: v.target.value }))
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              className="td-edit td-edit--purple"
+                              type="number"
+                              value={editData.newSYP}
+                              onChange={(v) =>
+                                setEditData((p) => ({ ...p, newSYP: v.target.value }))
                               }
                             />
                           </td>
@@ -1260,16 +1251,16 @@ function EntriesPage({ session, onBack, defaultTab }) {
                         <>
                           <td>
                             <span
-                              className={`tbl-amt tbl-amt--${tab === "deposit" ? "purple" : "red"}`}
+                              className={`tbl-amt tbl-amt--${tab === "deposit" ? "teal" : "orange"}`}
                             >
-                              {(e.newSYP || 0).toLocaleString()}
+                              {(e.oldSYP || 0).toLocaleString()}
                             </span>
                           </td>
                           <td>
                             <span
-                              className={`tbl-amt tbl-amt--${tab === "deposit" ? "teal" : "orange"}`}
+                              className={`tbl-amt tbl-amt--${tab === "deposit" ? "purple" : "red"}`}
                             >
-                              {(e.oldSYP || 0).toLocaleString()}
+                              {(e.newSYP || 0).toLocaleString()}
                             </span>
                           </td>
                           <td>
@@ -1308,8 +1299,8 @@ function EntriesPage({ session, onBack, defaultTab }) {
                                 onClick={() => {
                                   setEditId(e.id);
                                   setEditData({
-                                    newSYP: e.newSYP || 0,
                                     oldSYP: e.oldSYP || 0,
+                                    newSYP: e.newSYP || 0,
                                     usd: e.usd || 0,
                                     note: e.note || "",
                                   });
@@ -1343,16 +1334,16 @@ function EntriesPage({ session, onBack, defaultTab }) {
                     </td>
                     <td>
                       <span
-                        className={`tbl-amt tbl-amt--bold tbl-amt--${tab === "deposit" ? "purple" : "red"}`}
+                        className={`tbl-amt tbl-amt--bold tbl-amt--${tab === "deposit" ? "teal" : "orange"}`}
                       >
-                        {curT.newSYP.toLocaleString()}
+                        {curT.oldSYP.toLocaleString()}
                       </span>
                     </td>
                     <td>
                       <span
-                        className={`tbl-amt tbl-amt--bold tbl-amt--${tab === "deposit" ? "teal" : "orange"}`}
+                        className={`tbl-amt tbl-amt--bold tbl-amt--${tab === "deposit" ? "purple" : "red"}`}
                       >
-                        {curT.oldSYP.toLocaleString()}
+                        {curT.newSYP.toLocaleString()}
                       </span>
                     </td>
                     <td>
@@ -1372,6 +1363,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
         <div style={{ height: 40 }} />
       </div>
 
+      {/* Confirm delete */}
       <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
         title={`تأكيد حذف ${deleteTarget?.type === "withdrawal" ? "السحب" : "الإيداع"}`}
@@ -1382,7 +1374,7 @@ function EntriesPage({ session, onBack, defaultTab }) {
         onConfirm={handleDelete}
       />
 
-      {/* ════ PRINT DIALOG ════ */}
+      {/* Print Dialog */}
       {printDialog && (
         <div className="pd-overlay" onClick={() => setPrintDialog(false)}>
           <div className="pd-box" onClick={(e) => e.stopPropagation()}>
@@ -1395,7 +1387,6 @@ function EntriesPage({ session, onBack, defaultTab }) {
                 <div className="pd-subtitle">سيتم فتح نافذة الطباعة مباشرة</div>
               </div>
             </div>
-
             <div className="pd-options">
               <button
                 className="pd-opt pd-opt--dep"
@@ -1413,13 +1404,12 @@ function EntriesPage({ session, onBack, defaultTab }) {
                 <div className="pd-opt-body">
                   <span className="pd-opt-title">الإيداعات فقط</span>
                   <span className="pd-opt-desc">
-                    {deps.length} إدخال · ل.س جديد: {dT.newSYP.toLocaleString()} · ل.س قديم:{" "}
-                    {dT.oldSYP.toLocaleString()} · ${dT.usd.toLocaleString()}
+                    {deps.length} إدخال · ل.س قديم: {dT.oldSYP.toLocaleString()} · ل.س جديد:{" "}
+                    {dT.newSYP.toLocaleString()} · ${dT.usd.toLocaleString()}
                   </span>
                 </div>
                 <i className="fa-solid fa-chevron-left pd-opt-arrow" />
               </button>
-
               <button
                 className="pd-opt pd-opt--wth"
                 onClick={() => {
@@ -1433,13 +1423,12 @@ function EntriesPage({ session, onBack, defaultTab }) {
                 <div className="pd-opt-body">
                   <span className="pd-opt-title">السحوبات فقط</span>
                   <span className="pd-opt-desc">
-                    {wths.length} إدخال · ل.س جديد: {wT.newSYP.toLocaleString()} · ل.س قديم:{" "}
-                    {wT.oldSYP.toLocaleString()} · ${wT.usd.toLocaleString()}
+                    {wths.length} إدخال · ل.س قديم: {wT.oldSYP.toLocaleString()} · ل.س جديد:{" "}
+                    {wT.newSYP.toLocaleString()} · ${wT.usd.toLocaleString()}
                   </span>
                 </div>
                 <i className="fa-solid fa-chevron-left pd-opt-arrow" />
               </button>
-
               <button
                 className="pd-opt pd-opt--all"
                 onClick={() => {
@@ -1456,14 +1445,13 @@ function EntriesPage({ session, onBack, defaultTab }) {
                 <div className="pd-opt-body">
                   <span className="pd-opt-title">الإيداعات والسحوبات معاً</span>
                   <span className="pd-opt-desc">
-                    {entries.length} إدخال إجمالاً · الصافي: {nT.newSYP.toLocaleString()} /{" "}
-                    {nT.oldSYP.toLocaleString()} / ${nT.usd.toLocaleString()}
+                    {entries.length} إدخال إجمالاً · الصافي: {nT.oldSYP.toLocaleString()} /{" "}
+                    {nT.newSYP.toLocaleString()} / ${nT.usd.toLocaleString()}
                   </span>
                 </div>
                 <i className="fa-solid fa-chevron-left pd-opt-arrow" />
               </button>
             </div>
-
             <button className="pd-cancel" onClick={() => setPrintDialog(false)}>
               <i className="fa-solid fa-xmark" />
               إلغاء
@@ -1472,336 +1460,99 @@ function EntriesPage({ session, onBack, defaultTab }) {
         </div>
       )}
 
-      {/* ════ PRINT TEMPLATE ════ */}
+      {/* Print Template */}
       <div style={{ display: "none" }}>
         <div ref={printRef}>
           <div className="page">
-            {/* Header */}
-            <div className="ph">
-              <div className="ph-brand">
-                <div className="ph-brand-ico">💼</div>
-                <div>
-                  <div className="ph-brand-name">cashier assistant</div>
-                  <div className="ph-brand-sub">نظام إدارة الإيرادات المتكامل</div>
+            <h1 className="pr-title">{printTitle()}</h1>
+            <div className="pr-date">{reportDate()}</div>
+
+            <h2 className="pr-summary-title">ملخص الإجماليات</h2>
+            <div className="pr-blue-line" />
+            <div className="pr-summary-grid">
+              {[
+                {
+                  name: "الليرة السورية القديمة",
+                  total: dT.oldSYP,
+                  withdrawn: wT.oldSYP,
+                  net: nT.oldSYP,
+                },
+                {
+                  name: "الليرة السورية الجديدة",
+                  total: dT.newSYP,
+                  withdrawn: wT.newSYP,
+                  net: nT.newSYP,
+                },
+                {
+                  name: "الدولار الأمريكي",
+                  total: dT.usd,
+                  withdrawn: wT.usd,
+                  net: nT.usd,
+                },
+              ].map((item) => (
+                <div key={item.name} className="pr-summary-card">
+                  <div className="pr-summary-name">{item.name}</div>
+                  <div className="pr-summary-line">
+                    الإجمالي: <span className="pr-num">{money(item.total)}</span>
+                  </div>
+                  <div className="pr-summary-line">
+                    المسحوب: <span className="pr-num">{money(item.withdrawn)}</span>
+                  </div>
+                  <div className="pr-summary-net">
+                    الصافي: <span className="pr-num">{money(item.net)}</span>
+                  </div>
                 </div>
-              </div>
-              <div
-                className={`ph-badge ${printMode === "deposit" ? "ph-badge--dep" : printMode === "withdrawal" ? "ph-badge--wth" : "ph-badge--all"}`}
-              >
-                {printMode === "deposit"
-                  ? "تقرير الإيداعات"
-                  : printMode === "withdrawal"
-                    ? "تقرير السحوبات"
-                    : "تقرير شامل"}
-              </div>
+              ))}
             </div>
 
-            {/* Meta */}
-            <div className="pi">
-              <div className="pi-card">
-                <div className="pi-lbl">اسم الجلسة</div>
-                <div className="pi-val">{session.label}</div>
-              </div>
-              <div className="pi-card">
-                <div className="pi-lbl">الشركة</div>
-                <div className="pi-val">{session.companyName}</div>
-              </div>
-              <div className="pi-card">
-                <div className="pi-lbl">التاريخ</div>
-                <div className="pi-val">{session.date}</div>
-              </div>
-              <div className="pi-card">
-                <div className="pi-lbl">عدد الإدخالات</div>
-                <div className="pi-val">{pRows.length}</div>
-              </div>
-            </div>
-
-            {/* Summary boxes */}
-            {pDeps.length > 0 && (
-              <div className="ps-section">
-                <div className="ps-section-title">ملخص الإيداعات</div>
-                <div className="ps-grid">
-                  <div className="ps-box ps-box--dep">
-                    <div className="ps-lbl">إجمالي ل.س جديد</div>
-                    <div className="ps-val">{pDT.newSYP.toLocaleString()}</div>
-                    <div className="ps-sub">ليرة سورية جديدة</div>
-                    {printMode !== "all" && (
-                      <div className="ps-net">
-                        الصافي بعد السحب:
-                        <span className={`ps-net-val ${netTone(nT.newSYP)}`}>
-                          {fmtNet(nT.newSYP)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="ps-box ps-box--dep">
-                    <div className="ps-lbl">إجمالي ل.س قديم</div>
-                    <div className="ps-val">{pDT.oldSYP.toLocaleString()}</div>
-                    <div className="ps-sub">ليرة سورية قديمة</div>
-                    {printMode !== "all" && (
-                      <div className="ps-net">
-                        الصافي بعد السحب:
-                        <span className={`ps-net-val ${netTone(nT.oldSYP)}`}>
-                          {fmtNet(nT.oldSYP)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="ps-box ps-box--dep">
-                    <div className="ps-lbl">إجمالي دولار</div>
-                    <div className="ps-val">${pDT.usd.toLocaleString()}</div>
-                    <div className="ps-sub">دولار أمريكي</div>
-                    {printMode !== "all" && (
-                      <div className="ps-net">
-                        الصافي بعد السحب:
-                        <span className={`ps-net-val ${netTone(nT.usd)}`}>
-                          {fmtNet(nT.usd, "$")}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {pWths.length > 0 && (
-              <div className="ps-section">
-                <div className="ps-section-title">ملخص السحوبات</div>
-                <div className="ps-grid">
-                  <div className="ps-box ps-box--wth">
-                    <div className="ps-lbl">إجمالي ل.س جديد</div>
-                    <div className="ps-val">{pWT.newSYP.toLocaleString()}</div>
-                    <div className="ps-sub">ليرة سورية جديدة</div>
-                    {printMode !== "all" && (
-                      <div className="ps-net">
-                        الصافي بعد السحب:
-                        <span className={`ps-net-val ${netTone(nT.newSYP)}`}>
-                          {fmtNet(nT.newSYP)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="ps-box ps-box--wth">
-                    <div className="ps-lbl">إجمالي ل.س قديم</div>
-                    <div className="ps-val">{pWT.oldSYP.toLocaleString()}</div>
-                    <div className="ps-sub">ليرة سورية قديمة</div>
-                    {printMode !== "all" && (
-                      <div className="ps-net">
-                        الصافي بعد السحب:
-                        <span className={`ps-net-val ${netTone(nT.oldSYP)}`}>
-                          {fmtNet(nT.oldSYP)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="ps-box ps-box--wth">
-                    <div className="ps-lbl">إجمالي دولار</div>
-                    <div className="ps-val">${pWT.usd.toLocaleString()}</div>
-                    <div className="ps-sub">دولار أمريكي</div>
-                    {printMode !== "all" && (
-                      <div className="ps-net">
-                        الصافي بعد السحب:
-                        <span className={`ps-net-val ${netTone(nT.usd)}`}>
-                          {fmtNet(nT.usd, "$")}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Deposits table */}
-            {pDeps.length > 0 && (
-              <>
-                <div className="sec-hdr">
-                  <div className="sec-hdr-bar sec-hdr-bar--dep" />
-                  <div className="sec-hdr-title">الإيداعات</div>
-                  <span className="sec-hdr-count sec-hdr-count--dep">{pDeps.length} إدخال</span>
-                </div>
-                <div className="tbl-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>المندوب</th>
-                        <th>ل.س جديد</th>
-                        <th>ل.س قديم</th>
-                        <th>دولار</th>
-                        <th>ملاحظة</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pDeps.map((e, i) => (
-                        <tr key={e.id} className="dep-row">
-                          <td>{i + 1}</td>
-                          <td>
-                            <div className="rep-cell">
-                              <div className="rep-ava rep-ava--dep">
-                                {e.repName?.charAt(0) || "؟"}
-                              </div>
-                              <span className="rep-name">{e.repName}</span>
+            {pRows.length === 0 ? (
+              <div className="pr-empty">لا توجد إدخالات للطباعة</div>
+            ) : (
+              <table className="pr-table">
+                <thead>
+                  <tr>
+                    <th className="pr-col-index">#</th>
+                    <th className="pr-col-name">الاسم</th>
+                    <th className="pr-col-date">التاريخ</th>
+                    <th className="pr-col-type">النوع</th>
+                    <th className="pr-col-amounts">المبالغ</th>
+                    <th className="pr-col-notes">ملاحظات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pRows.map((entry, index) => (
+                    <tr key={entry.id || index}>
+                      <td>{index + 1}</td>
+                      <td>{entry.repName || "-"}</td>
+                      <td>
+                        <span className="pr-num">{entryDate(entry)}</span>
+                      </td>
+                      <td>{entry.type === "withdrawal" ? "سحب" : "إيداع"}</td>
+                      <td>
+                        <div className="pr-amounts">
+                          {amountLines(entry).map((line, lineIndex) => (
+                            <div key={lineIndex} className="pr-amount-line">
+                              <span className="pr-num">{line.amount}</span>
+                              {line.unit && <span className="pr-amount-unit">{line.unit}</span>}
                             </div>
-                          </td>
-                          <td>
-                            <span className="amt amt--purple">
-                              {(e.newSYP || 0).toLocaleString()}
-                            </span>
-                          </td>
-                          <td>
-                            <span className="amt amt--teal">
-                              {(e.oldSYP || 0).toLocaleString()}
-                            </span>
-                          </td>
-                          <td>
-                            <span className="amt amt--amber">${(e.usd || 0).toLocaleString()}</span>
-                          </td>
-                          <td>
-                            <span className="note-cell">{e.note || "—"}</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="tot-row">
-                        <td colSpan="2">
-                          <span className="tot-label">الإجمالي</span>
-                        </td>
-                        <td>
-                          <span className="amt amt--purple">{pDT.newSYP.toLocaleString()}</span>
-                        </td>
-                        <td>
-                          <span className="amt amt--teal">{pDT.oldSYP.toLocaleString()}</span>
-                        </td>
-                        <td>
-                          <span className="amt amt--amber">${pDT.usd.toLocaleString()}</span>
-                        </td>
-                        <td></td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </>
+                          ))}
+                        </div>
+                      </td>
+                      <td>
+                        <span className="pr-note">{entry.note || "-"}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
 
-            {/* Withdrawals table */}
-            {pWths.length > 0 && (
-              <>
-                <div className="sec-hdr">
-                  <div className="sec-hdr-bar sec-hdr-bar--wth" />
-                  <div className="sec-hdr-title">السحوبات</div>
-                  <span className="sec-hdr-count sec-hdr-count--wth">{pWths.length} إدخال</span>
-                </div>
-                <div className="tbl-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>الاسم</th>
-                        <th>ل.س جديد</th>
-                        <th>ل.س قديم</th>
-                        <th>دولار</th>
-                        <th>ملاحظة</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pWths.map((e, i) => (
-                        <tr key={e.id} className="wth-row">
-                          <td>{i + 1}</td>
-                          <td>
-                            <div className="rep-cell">
-                              <div className="rep-ava rep-ava--wth">
-                                {e.repName?.charAt(0) || "؟"}
-                              </div>
-                              <span className="rep-name">{e.repName}</span>
-                            </div>
-                          </td>
-                          <td>
-                            <span className="amt amt--red">{(e.newSYP || 0).toLocaleString()}</span>
-                          </td>
-                          <td>
-                            <span className="amt amt--orange">
-                              {(e.oldSYP || 0).toLocaleString()}
-                            </span>
-                          </td>
-                          <td>
-                            <span className="amt amt--pink">${(e.usd || 0).toLocaleString()}</span>
-                          </td>
-                          <td>
-                            <span className="note-cell">{e.note || "—"}</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="tot-row">
-                        <td colSpan="2">
-                          <span className="tot-label">الإجمالي</span>
-                        </td>
-                        <td>
-                          <span className="amt amt--red">{pWT.newSYP.toLocaleString()}</span>
-                        </td>
-                        <td>
-                          <span className="amt amt--orange">{pWT.oldSYP.toLocaleString()}</span>
-                        </td>
-                        <td>
-                          <span className="amt amt--pink">${pWT.usd.toLocaleString()}</span>
-                        </td>
-                        <td></td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </>
-            )}
-
-            {/* Net section — only when both */}
-            {printMode === "all" && pDeps.length > 0 && pWths.length > 0 && (
-              <div className="net-section">
-                <div className="net-section-title">الصافي الإجمالي</div>
-                <div className="net-items">
-                  <div className="net-item">
-                    <span className="net-lbl">ل.س جديد</span>
-                    <span
-                      className={`net-val ${pNT.newSYP > 0 ? "net-val--pos" : pNT.newSYP < 0 ? "net-val--neg" : "net-val--zero"}`}
-                    >
-                      {fmtNet(pNT.newSYP)}
-                    </span>
-                  </div>
-                  <div className="net-item">
-                    <span className="net-lbl">ل.س قديم</span>
-                    <span
-                      className={`net-val ${pNT.oldSYP > 0 ? "net-val--pos" : pNT.oldSYP < 0 ? "net-val--neg" : "net-val--zero"}`}
-                    >
-                      {fmtNet(pNT.oldSYP)}
-                    </span>
-                  </div>
-                  <div className="net-item">
-                    <span className="net-lbl">دولار</span>
-                    <span
-                      className={`net-val ${pNT.usd > 0 ? "net-val--pos" : pNT.usd < 0 ? "net-val--neg" : "net-val--zero"}`}
-                    >
-                      {fmtNet(pNT.usd, "$")}
-                    </span>
-                  </div>
-                </div>
+            {printUserName && (
+              <div className="pr-footer">
+                <span>منسق التقرير: </span>
+                <strong dir="ltr">{printUserName}</strong>
               </div>
             )}
-
-            {/* Footer */}
-            <div className="pf">
-              <div className="pf-left">
-                تاريخ الطباعة:{" "}
-                {new Date().toLocaleDateString("en-us", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </div>
-              <div className="pf-right">Cashier assistant - all rights reserved</div>
-            </div>
           </div>
         </div>
       </div>
@@ -1972,15 +1723,19 @@ const CSS = `
 .sd-net-val--pos{color:#6ee7b7 !important;}.sd-net-val--neg{color:#fca5a5 !important;}
 .sd-body{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px;min-height:0;}
 .sd-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.sd-sum-card{background:#fff;border-radius:16px;padding:18px 20px;border:1px solid #f1f5f9;box-shadow:0 2px 12px rgba(0,0,0,0.05);display:flex;flex-direction:column;gap:14px;animation:sdFadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both;}
+.sd-sum-card{background:#fff;border-radius:16px;padding:18px 20px;border:1px solid #f1f5f9;box-shadow:0 2px 12px rgba(0,0,0,0.05);display:flex;flex-direction:column;gap:12px;animation:sdFadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both;}
 .sd-sum-card--dep{border-top:3px solid #10b981;}.sd-sum-card--wth{border-top:3px solid #ef4444;}
 .sd-sum-card-header{display:flex;align-items:center;gap:12px;}
 .sd-sum-card-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .sd-sum-card-ico--dep{background:#d1fae5;}.sd-sum-card-ico--wth{background:#fee2e2;}
 .sd-sum-card-title{font-size:15px;font-weight:800;color:#1e293b;margin-bottom:2px;}
 .sd-sum-card-count{font-size:12px;color:#94a3b8;font-weight:500;}
-.sd-sum-amounts{display:flex;flex-direction:column;gap:8px;}
-.sd-sum-amount{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:#f8fafc;border-radius:8px;}
+.sd-sum-amounts{display:flex;flex-direction:column;gap:6px;}
+.sd-sum-row{border-radius:10px;background:#f8fafc;overflow:hidden;}
+.sd-sum-amount{display:flex;align-items:center;justify-content:space-between;padding:8px 11px 4px;}
+.sd-sum-net{display:flex;align-items:center;gap:4px;padding:3px 11px 7px;font-size:10px;font-weight:600;}
+.sd-sum-net--pos{color:#059669;background:rgba(5,150,105,0.04);}
+.sd-sum-net--neg{color:#dc2626;background:rgba(220,38,38,0.04);}
 .sd-sum-lbl{font-size:12px;color:#64748b;font-weight:500;}
 .sd-sum-val{font-size:14px;font-weight:800;}
 .sd-sum-val--purple{color:#4f46e5;}.sd-sum-val--teal{color:#059669;}.sd-sum-val--amber{color:#d97706;}
@@ -2042,13 +1797,13 @@ const CSS = `
 .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .dot--purple{background:#818cf8;}.dot--teal{background:#34d399;}.dot--amber{background:#fbbf24;}
 .ep-inp-wrap{border:1.5px solid #e2e8f0;border-radius:10px;background:#f8fafc;transition:all 0.2s;position:relative;}
-.ep-inp-wrap--dep:focus-within,.ep-inp-wrap--dep:focus-within{border-color:#059669;background:#fff;box-shadow:0 0 0 3px rgba(5,150,105,0.1);}
+.ep-inp-wrap--dep:focus-within{border-color:#059669;background:#fff;box-shadow:0 0 0 3px rgba(5,150,105,0.1);}
 .ep-inp-wrap--wth:focus-within{border-color:#ef4444;background:#fff;box-shadow:0 0 0 3px rgba(239,68,68,0.1);}
-.ep-inp-wrap--purple:focus-within{border-color:#818cf8;background:#fff;box-shadow:0 0 0 3px rgba(129,140,248,0.1);}
 .ep-inp-wrap--teal:focus-within{border-color:#34d399;background:#fff;box-shadow:0 0 0 3px rgba(52,211,153,0.1);}
+.ep-inp-wrap--purple:focus-within{border-color:#818cf8;background:#fff;box-shadow:0 0 0 3px rgba(129,140,248,0.1);}
 .ep-inp-wrap--amber:focus-within{border-color:#fbbf24;background:#fff;box-shadow:0 0 0 3px rgba(251,191,36,0.1);}
-.ep-inp-wrap--red:focus-within{border-color:#ef4444;background:#fff;box-shadow:0 0 0 3px rgba(239,68,68,0.1);}
 .ep-inp-wrap--orange:focus-within{border-color:#f97316;background:#fff;box-shadow:0 0 0 3px rgba(249,115,22,0.1);}
+.ep-inp-wrap--red:focus-within{border-color:#ef4444;background:#fff;box-shadow:0 0 0 3px rgba(239,68,68,0.1);}
 .ep-inp-wrap--pink:focus-within{border-color:#ec4899;background:#fff;box-shadow:0 0 0 3px rgba(236,72,153,0.1);}
 .ep-ico{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px;pointer-events:none;}
 .ep-inp{width:100%;padding:10px 12px;border:none;background:transparent;font-size:14px;color:#1e293b;text-align:right;border-radius:10px;}
@@ -2063,8 +1818,8 @@ const CSS = `
 .ep-total-chip{flex:1;min-width:90px;display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-radius:10px;}
 .ep-total-lbl{font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.3px;}
 .ep-total-val{font-size:14px;font-weight:900;}
-.et--purple{background:#f5f3ff;}.et--purple .ep-total-val{color:#4f46e5;}
 .et--teal{background:#f0fdf4;}.et--teal .ep-total-val{color:#059669;}
+.et--purple{background:#f5f3ff;}.et--purple .ep-total-val{color:#4f46e5;}
 .et--amber{background:#fffbeb;}.et--amber .ep-total-val{color:#d97706;}
 .et--red{background:#fef2f2;}.et--red .ep-total-val{color:#dc2626;}
 .et--orange{background:#fff7ed;}.et--orange .ep-total-val{color:#ea580c;}
@@ -2088,12 +1843,12 @@ const CSS = `
 .td-ava--dep{background:linear-gradient(135deg,#059669,#34d399);}.td-ava--wth{background:linear-gradient(135deg,#dc2626,#f87171);}
 .td-name{font-size:13px;font-weight:700;color:#1e293b;}
 .tbl-amt{display:inline-flex;align-items:center;padding:3px 9px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;}
-.tbl-amt--purple{background:#f5f3ff;color:#4f46e5;}.tbl-amt--teal{background:#f0fdf4;color:#059669;}.tbl-amt--amber{background:#fffbeb;color:#d97706;}
-.tbl-amt--red{background:#fef2f2;color:#dc2626;}.tbl-amt--orange{background:#fff7ed;color:#ea580c;}.tbl-amt--pink{background:#fdf2f8;color:#be185d;}
+.tbl-amt--teal{background:#f0fdf4;color:#059669;}.tbl-amt--purple{background:#f5f3ff;color:#4f46e5;}.tbl-amt--amber{background:#fffbeb;color:#d97706;}
+.tbl-amt--orange{background:#fff7ed;color:#ea580c;}.tbl-amt--red{background:#fef2f2;color:#dc2626;}.tbl-amt--pink{background:#fdf2f8;color:#be185d;}
 .tbl-amt--bold{font-size:13px !important;padding:5px 11px !important;font-weight:900 !important;}
 .td-note{font-size:12px;color:#94a3b8;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
 .td-edit{width:100%;padding:6px 8px;border-radius:7px;font-size:12px;color:#1e293b;text-align:right;min-width:70px;border:1.5px solid #e2e8f0;background:#f8fafc;}
-.td-edit--purple{border-color:#818cf8;background:#f5f3ff;}.td-edit--teal{border-color:#34d399;background:#f0fdf4;}.td-edit--amber{border-color:#fbbf24;background:#fffbeb;}
+.td-edit--teal{border-color:#34d399;background:#f0fdf4;}.td-edit--purple{border-color:#818cf8;background:#f5f3ff;}.td-edit--amber{border-color:#fbbf24;background:#fffbeb;}
 .td-edit:focus{outline:none;}
 .td-acts{display:flex;gap:5px;align-items:center;}
 .act-btn{width:28px;height:28px;border-radius:7px;border:none;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;transition:all 0.18s;}
@@ -2105,51 +1860,16 @@ const CSS = `
 .ep-tfoot td{padding:10px 13px;background:#f8fafc;border-top:2px solid #e2e8f0;font-weight:700;}
 .ep-tfoot-lbl{font-size:12px;font-weight:800;color:#1e293b;}
 
-/* ════ PRINT DIALOG ════ */
-.pd-overlay{
-  position:fixed;inset:0;
-  background:rgba(15,12,41,0.65);
-  backdrop-filter:blur(8px);
-  -webkit-backdrop-filter:blur(8px);
-  z-index:1000;
-  display:flex;align-items:center;justify-content:center;
-  padding:20px;
-  animation:pdIn 0.2s ease both;
-}
-.pd-box{
-  background:#fff;
-  border-radius:24px;
-  padding:0;
-  width:100%;max-width:420px;
-  box-shadow:0 32px 80px rgba(0,0,0,0.25),0 0 0 1px rgba(0,0,0,0.04);
-  animation:pdBoxIn 0.32s cubic-bezier(0.22,1,0.36,1) both;
-  overflow:hidden;
-}
-.pd-header{
-  display:flex;align-items:center;gap:14px;
-  padding:22px 24px 18px;
-  border-bottom:1px solid #f1f5f9;
-  background:linear-gradient(135deg,#fafbff,#f5f3ff);
-}
-.pd-header-ico{
-  width:46px;height:46px;border-radius:13px;flex-shrink:0;
-  background:linear-gradient(135deg,#ede9fe,#ddd6fe);
-  border:1px solid rgba(99,102,241,0.2);
-  display:flex;align-items:center;justify-content:center;
-}
+/* PRINT DIALOG */
+.pd-overlay{position:fixed;inset:0;background:rgba(15,12,41,0.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;animation:pdIn 0.2s ease both;}
+.pd-box{background:#fff;border-radius:24px;padding:0;width:100%;max-width:420px;box-shadow:0 32px 80px rgba(0,0,0,0.25),0 0 0 1px rgba(0,0,0,0.04);animation:pdBoxIn 0.32s cubic-bezier(0.22,1,0.36,1) both;overflow:hidden;}
+.pd-header{display:flex;align-items:center;gap:14px;padding:22px 24px 18px;border-bottom:1px solid #f1f5f9;background:linear-gradient(135deg,#fafbff,#f5f3ff);}
+.pd-header-ico{width:46px;height:46px;border-radius:13px;flex-shrink:0;background:linear-gradient(135deg,#ede9fe,#ddd6fe);border:1px solid rgba(99,102,241,0.2);display:flex;align-items:center;justify-content:center;}
 .pd-title{font-size:16px;font-weight:900;color:#1e293b;margin-bottom:2px;letter-spacing:-0.3px;}
 .pd-subtitle{font-size:12px;color:#94a3b8;font-weight:400;}
 .pd-options{display:flex;flex-direction:column;padding:14px 16px;gap:8px;}
-.pd-opt{
-  display:flex;align-items:center;gap:14px;
-  padding:14px 16px;border-radius:14px;border:none;
-  cursor:pointer;transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1);
-  text-align:right;width:100%;
-  animation:pdOptIn 0.3s cubic-bezier(0.22,1,0.36,1) both;
-}
-.pd-opt:nth-child(1){animation-delay:0.05s;}
-.pd-opt:nth-child(2){animation-delay:0.1s;}
-.pd-opt:nth-child(3){animation-delay:0.15s;}
+.pd-opt{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:none;cursor:pointer;transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1);text-align:right;width:100%;animation:pdOptIn 0.3s cubic-bezier(0.22,1,0.36,1) both;}
+.pd-opt:nth-child(1){animation-delay:0.05s;}.pd-opt:nth-child(2){animation-delay:0.1s;}.pd-opt:nth-child(3){animation-delay:0.15s;}
 .pd-opt--dep{background:#f0fdf4;border:1.5px solid #bbf7d0;}
 .pd-opt--dep:hover{background:#dcfce7;border-color:#059669;transform:translateX(-4px) scale(1.01);box-shadow:0 6px 20px rgba(5,150,105,0.18);}
 .pd-opt--wth{background:#fef2f2;border:1.5px solid #fecaca;}
@@ -2157,20 +1877,13 @@ const CSS = `
 .pd-opt--all{background:#f5f3ff;border:1.5px solid #ddd6fe;}
 .pd-opt--all:hover{background:#ede9fe;border-color:#4f46e5;transform:translateX(-4px) scale(1.01);box-shadow:0 6px 20px rgba(79,70,229,0.18);}
 .pd-opt-ico{width:46px;height:46px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
-.pd-opt-ico--dep{background:#d1fae5;}
-.pd-opt-ico--wth{background:#fee2e2;}
-.pd-opt-ico--all{background:#ede9fe;}
+.pd-opt-ico--dep{background:#d1fae5;}.pd-opt-ico--wth{background:#fee2e2;}.pd-opt-ico--all{background:#ede9fe;}
 .pd-opt-body{display:flex;flex-direction:column;gap:3px;flex:1;text-align:right;}
 .pd-opt-title{font-size:14px;font-weight:800;color:#1e293b;}
 .pd-opt-desc{font-size:11px;color:#94a3b8;font-weight:400;line-height:1.4;}
 .pd-opt-arrow{font-size:12px;color:#cbd5e1;flex-shrink:0;transition:all 0.2s;}
 .pd-opt:hover .pd-opt-arrow{color:#475569;transform:translateX(-3px);}
-.pd-cancel{
-  display:flex;align-items:center;justify-content:center;gap:7px;
-  width:calc(100% - 32px);margin:0 16px 16px;padding:11px;
-  border-radius:11px;background:#f8fafc;border:1.5px solid #e2e8f0;
-  color:#64748b;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;
-}
+.pd-cancel{display:flex;align-items:center;justify-content:center;gap:7px;width:calc(100% - 32px);margin:0 16px 16px;padding:11px;border-radius:11px;background:#f8fafc;border:1.5px solid #e2e8f0;color:#64748b;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;}
 .pd-cancel:hover{background:#f1f5f9;color:#1e293b;border-color:#cbd5e1;}
 
 /* Shared */
@@ -2208,5 +1921,5 @@ const CSS = `
   .sl-stats{grid-template-columns:1fr 1fr;}
   .ep-form-grid,.sd-net-amounts{grid-template-columns:1fr;}
   .ep-field--note,.ep-field--submit{grid-column:span 1;}
-};
+}
 `;
