@@ -133,8 +133,12 @@
   transition: all 0.2s;
   white-space: nowrap;
 }
-.pd-header-link:hover {
+.pd-header-link:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.22);
+}
+.pd-header-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Body */

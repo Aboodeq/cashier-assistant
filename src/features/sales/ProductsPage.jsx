@@ -1,12 +1,16 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
+import { formatReportTimestamp } from "../../utils/format";
+import { openPrintWindow } from "../../utils/printWindow";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
 import Modal from "../../components/Modal";
 import { formatMoney, hasDirectPrice, priceIn, useExchangeRate } from "./currency";
 import { baseUnitLabel, PACKAGE_TYPES, toBaseQty } from "./packaging";
+import { SALES_PRINT_STYLES } from "./printStyles";
+import StockReportTemplate from "./StockReportTemplate";
 import "./ProductsPage.css";
 
 const emptyForm = {
@@ -37,6 +41,9 @@ export default function ProductsPage() {
   const [deleting, setDeleting] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [search, setSearch] = useState("");
+  const [printingStock, setPrintingStock] = useState(false);
+  const printRef = useRef(null);
+  const repName = auth.currentUser?.displayName || auth.currentUser?.email?.split("@")[0] || "";
 
   const setField = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
 
@@ -110,6 +117,23 @@ export default function ProductsPage() {
   const goStock = (productId, type) =>
     navigate("/sales/products/stock", { state: { productId, type } });
 
+  const handlePrintStockReport = () => {
+    setPrintingStock(true);
+    setTimeout(() => {
+      const bodyHtml = printRef.current?.innerHTML || "";
+      const w = openPrintWindow({ title: "تقرير المخزون", bodyHtml, styles: SALES_PRINT_STYLES });
+      if (!w) {
+        setPrintingStock(false);
+        return;
+      }
+      setTimeout(() => {
+        w.print();
+        w.close();
+        setPrintingStock(false);
+      }, 500);
+    }, 150);
+  };
+
   // Price is always entered for the product's own package-type unit (e.g. per
   // carton) — this just labels the price fields with that unit for clarity.
   const packageUnitLabel = (packageType, unit) =>
@@ -134,6 +158,14 @@ export default function ProductsPage() {
               </div>
             </div>
             <div className="pd-header-right">
+              <button
+                className="pd-header-link"
+                onClick={handlePrintStockReport}
+                disabled={printingStock || products.length === 0}
+              >
+                <i className="fa-solid fa-print" />
+                طباعة تقرير المخزون
+              </button>
               <button className="pd-header-link" onClick={() => navigate("/sales/products/stock")}>
                 <i className="fa-solid fa-clock-rotate-left" />
                 سجل الحركات
@@ -660,6 +692,15 @@ export default function ProductsPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Stock report print template (off-screen; lifted into the print popup) */}
+      <StockReportTemplate
+        printRef={printRef}
+        products={products}
+        moves={moves}
+        repName={repName}
+        printedAt={formatReportTimestamp()}
+      />
     </>
   );
 }

@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
+import { formatReportTimestamp } from "../../utils/format";
+import { openPrintWindow } from "../../utils/printWindow";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
 import Modal from "../../components/Modal";
 import { formatDual } from "./currency";
+import { SALES_PRINT_STYLES } from "./printStyles";
+import StatementTemplate from "./StatementTemplate";
 import "./ClientsPage.css";
 
 const CATEGORIES = [
@@ -58,8 +62,32 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [filterTerritory, setFilterTerritory] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
+  const [printClient, setPrintClient] = useState(null);
+  const printRef = useRef(null);
+  const repName = auth.currentUser?.displayName || auth.currentUser?.email?.split("@")[0] || "";
 
   const setField = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
+
+  const handlePrintStatement = (client) => {
+    setPrintClient(client);
+    setTimeout(() => {
+      const bodyHtml = printRef.current?.innerHTML || "";
+      const w = openPrintWindow({
+        title: `كشف حساب — ${client.name}`,
+        bodyHtml,
+        styles: SALES_PRINT_STYLES,
+      });
+      if (!w) {
+        setPrintClient(null);
+        return;
+      }
+      setTimeout(() => {
+        w.print();
+        w.close();
+        setPrintClient(null);
+      }, 500);
+    }, 150);
+  };
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -427,6 +455,14 @@ export default function ClientsPage() {
                         زيارة
                       </button>
                       <button
+                        className="cl-btn cl-btn--print"
+                        onClick={() => handlePrintStatement(c)}
+                        disabled={Boolean(printClient)}
+                        title="طباعة كشف الحساب"
+                      >
+                        <i className="fa-solid fa-print" />
+                      </button>
+                      <button
                         className="cl-btn cl-btn--edit"
                         onClick={() => {
                           setEditId(c.id);
@@ -597,6 +633,18 @@ export default function ClientsPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Statement print template (off-screen; lifted into the print popup) */}
+      <StatementTemplate
+        printRef={printRef}
+        client={printClient}
+        orders={printClient ? orders.filter((o) => o.clientId === printClient.id) : []}
+        payments={printClient ? payments.filter((p) => p.clientId === printClient.id) : []}
+        balanceUSD={printClient ? balanceIn(printClient.id, "USD") : 0}
+        balanceSYP={printClient ? balanceIn(printClient.id, "SYP") : 0}
+        repName={repName}
+        printedAt={formatReportTimestamp()}
+      />
     </>
   );
 }

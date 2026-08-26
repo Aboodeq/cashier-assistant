@@ -564,6 +564,18 @@ select.cl-inp {
   background: #e0f2fe;
   transform: scale(1.05);
 }
+.cl-btn--print {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+.cl-btn--print:hover:not(:disabled) {
+  background: #dcfce7;
+  transform: scale(1.05);
+}
+.cl-btn--print:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 .cl-btn--edit {
   background: #f5f3ff;
   color: #7c3aed;
