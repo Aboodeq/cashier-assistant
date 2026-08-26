@@ -2,6 +2,7 @@ import { Route, Routes, useNavigate } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell";
 import ClientsPage from "./ClientsPage";
 import ExpensesPage from "./ExpensesPage";
+import GoalsPage from "./GoalsPage";
 import PaymentsPage from "./PaymentsPage";
 import ProductsPage from "./ProductsPage";
 import SalesHome from "./SalesHome";
@@ -27,6 +28,7 @@ export default function SalesShell() {
         <Route path="products/stock" element={<StockPage />} />
         <Route path="orders" element={<SalesOrdersPage />} />
         <Route path="expenses" element={<ExpensesPage />} />
+        <Route path="goals" element={<GoalsPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Routes>
     </AppShell>

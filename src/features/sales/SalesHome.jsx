@@ -53,12 +53,17 @@ const SECTIONS = [
     bg: "#fffbeb",
     color: "#92400e",
   },
+  {
+    to: "/sales/goals",
+    icon: "fa-solid fa-bullseye",
+    label: "الأهداف والعمولات",
+    desc: "حدّد هدف مبيعاتك الشهري ونسبة عمولتك وتابع نسبة إنجازك",
+    bg: "#fdf2f8",
+    color: "#9d174d",
+  },
 ];
 
-const ROADMAP = [
-  { icon: "fa-solid fa-bullseye", label: "الأهداف والعمولات" },
-  { icon: "fa-solid fa-chart-line", label: "التقارير" },
-];
+const ROADMAP = [{ icon: "fa-solid fa-chart-line", label: "التقارير" }];
 
 const today = () => new Date().toISOString().split("T")[0];
 
@@ -72,6 +77,7 @@ export default function SalesHome({ nav }) {
   const orders = useFirestoreCollection(uid && ["users", uid, "salesOrders"]);
   const payments = useFirestoreCollection(uid && ["users", uid, "salesPayments"]);
   const expenses = useFirestoreCollection(uid && ["users", uid, "salesExpenses"]);
+  const goals = useFirestoreCollection(uid && ["users", uid, "salesGoals"]);
   const name = auth.currentUser?.email?.split("@")[0] || "مندوب المبيعات";
 
   const todaysOrders = orders.filter((o) => o.date === today());
@@ -85,6 +91,14 @@ export default function SalesHome({ nav }) {
   const expensesMonthSYP = thisMonthExpenses
     .filter((x) => x.currency === "SYP")
     .reduce((s, x) => s + x.amount, 0);
+
+  const monthOrders = orders.filter((o) => o.date?.startsWith(today().slice(0, 7)));
+  const monthSalesUSD = monthOrders.reduce((s, o) => s + (o.totalUSD || 0), 0);
+  const monthSalesSYP = monthOrders.reduce((s, o) => s + (o.totalSYP || 0), 0);
+  const currentMonthGoal = goals.find((g) => g.month === today().slice(0, 7));
+  const commissionRate = (Number(currentMonthGoal?.commissionRate) || 0) / 100;
+  const commissionUSD = monthSalesUSD * commissionRate;
+  const commissionSYP = monthSalesSYP * commissionRate;
 
   const creditOrders = orders.filter((o) => o.paymentType === "credit");
   const owedUSD =
@@ -182,6 +196,14 @@ export default function SalesHome({ nav }) {
                   {formatDual(expensesMonthUSD, expensesMonthSYP)}
                 </div>
                 <div className="shs-stat-lbl">مصاريف السيارة هذا الشهر</div>
+              </div>
+            )}
+            {(commissionUSD > 0 || commissionSYP > 0) && (
+              <div className="shs-stat-card">
+                <div className="shs-stat-val" style={{ fontSize: 18 }}>
+                  {formatDual(commissionUSD, commissionSYP)}
+                </div>
+                <div className="shs-stat-lbl">عمولة هذا الشهر</div>
               </div>
             )}
           </div>
