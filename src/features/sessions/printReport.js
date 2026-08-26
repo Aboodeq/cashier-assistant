@@ -1,21 +1,8 @@
-/**
- * Opens a new browser window, injects a self-contained printable report (its own
- * markup + stylesheet — it can't reach the app's stylesheets since it's a separate
- * document), and returns the window so the caller can trigger `.print()` once the
- * browser has laid it out.
- */
+import { openPrintWindow as openWindow } from "../../utils/printWindow";
+
+/** Opens the session report print window with this file's own report stylesheet. */
 export function openPrintWindow({ title, bodyHtml }) {
-  const w = window.open("", "_blank");
-  if (!w) return null;
-  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>${title}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
-    <style>${PRINT_STYLES}</style>
-  </head><body>${bodyHtml}</body></html>`);
-  w.document.close();
-  return w;
+  return openWindow({ title, bodyHtml, styles: PRINT_STYLES });
 }
 
 const PRINT_STYLES = `

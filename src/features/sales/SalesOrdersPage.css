@@ -692,6 +692,18 @@ select.so-inp {
   cursor: pointer;
   transition: all 0.2s;
 }
+.so-btn--print {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+.so-btn--print:hover:not(:disabled) {
+  background: #dcfce7;
+  transform: scale(1.05);
+}
+.so-btn--print:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 .so-btn--edit {
   background: #eef2ff;
   color: #4338ca;

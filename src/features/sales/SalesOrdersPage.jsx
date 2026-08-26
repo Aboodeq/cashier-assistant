@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { useLocation } from "react-router-dom";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
+import { formatReportTimestamp } from "../../utils/format";
+import { openPrintWindow } from "../../utils/printWindow";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
 import Modal from "../../components/Modal";
 import { formatDual, priceIn, useExchangeRate } from "./currency";
+import InvoiceTemplate, { INVOICE_PRINT_STYLES } from "./InvoiceTemplate";
 import "./SalesOrdersPage.css";
 
 const today = () => new Date().toISOString().split("T")[0];
@@ -43,6 +46,9 @@ export default function SalesOrdersPage() {
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [printOrder, setPrintOrder] = useState(null);
+  const printRef = useRef(null);
+  const repName = auth.currentUser?.displayName || auth.currentUser?.email?.split("@")[0] || "";
   const [filterClient, setFilterClient] = useState("");
   const [filterProduct, setFilterProduct] = useState("");
   const [filterPayment, setFilterPayment] = useState("");
@@ -196,6 +202,29 @@ export default function SalesOrdersPage() {
     } finally {
       setDeleting(null);
     }
+  };
+
+  const handlePrintOrder = (order) => {
+    setPrintOrder(order);
+    // Give the off-screen InvoiceTemplate a tick to re-render with this order's
+    // data before lifting its innerHTML into the print popup.
+    setTimeout(() => {
+      const bodyHtml = printRef.current?.innerHTML || "";
+      const w = openPrintWindow({
+        title: `فاتورة بيع — ${order.clientName}`,
+        bodyHtml,
+        styles: INVOICE_PRINT_STYLES,
+      });
+      if (!w) {
+        setPrintOrder(null);
+        return;
+      }
+      setTimeout(() => {
+        w.print();
+        w.close();
+        setPrintOrder(null);
+      }, 500);
+    }, 150);
   };
 
   const handleEdit = async () => {
@@ -706,6 +735,14 @@ export default function SalesOrdersPage() {
                   </div>
                   <div className="so-item-actions">
                     <button
+                      className="so-btn so-btn--print"
+                      onClick={() => handlePrintOrder(o)}
+                      disabled={Boolean(printOrder)}
+                      title="طباعة الفاتورة"
+                    >
+                      <i className="fa-solid fa-print" />
+                    </button>
+                    <button
                       className="so-btn so-btn--edit"
                       onClick={() => {
                         setEditId(o.id);
@@ -1017,6 +1054,15 @@ export default function SalesOrdersPage() {
         loading={Boolean(deleteTarget && deleting === deleteTarget.id)}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
+      />
+
+      {/* Invoice print template (off-screen; lifted into the print popup) */}
+      <InvoiceTemplate
+        printRef={printRef}
+        order={printOrder}
+        client={printOrder ? clients.find((c) => c.id === printOrder.clientId) : null}
+        repName={repName}
+        printedAt={formatReportTimestamp()}
       />
     </>
   );
