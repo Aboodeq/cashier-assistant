@@ -28,10 +28,17 @@ const SECTIONS = [
     bg: "#f0f9ff",
     color: "#0369a1",
   },
+  {
+    to: "/sales/products",
+    icon: "fa-solid fa-boxes-stacked",
+    label: "المنتجات والمخزون",
+    desc: "كتالوج المنتجات، وتحميل/إرجاع البضاعة من وإلى السيارة",
+    bg: "#f0fdfa",
+    color: "#0f766e",
+  },
 ];
 
 const ROADMAP = [
-  { icon: "fa-solid fa-boxes-stacked", label: "البضاعة والمخزون" },
   { icon: "fa-solid fa-file-invoice-dollar", label: "الطلبات والفواتير" },
   { icon: "fa-solid fa-car", label: "السيارة والمصاريف" },
   { icon: "fa-solid fa-bullseye", label: "الأهداف والعمولات" },
@@ -45,12 +52,22 @@ export default function SalesHome({ nav }) {
   const territories = useFirestoreCollection(uid && ["users", uid, "salesTerritories"]);
   const clients = useFirestoreCollection(uid && ["users", uid, "salesClients"]);
   const visits = useFirestoreCollection(uid && ["users", uid, "salesVisits"]);
+  const products = useFirestoreCollection(uid && ["users", uid, "salesProducts"]);
+  const moves = useFirestoreCollection(uid && ["users", uid, "salesStockMoves"]);
   const name = auth.currentUser?.email?.split("@")[0] || "مندوب المبيعات";
 
   const visitsToday = visits.filter((v) => v.date === today()).length;
   const followUps = visits
     .filter((v) => v.followUpDate && !v.followUpDone)
     .sort((a, b) => (a.followUpDate > b.followUpDate ? 1 : -1))
+    .slice(0, 6);
+
+  const stockOf = (productId) =>
+    moves
+      .filter((m) => m.productId === productId)
+      .reduce((t, m) => t + (m.type === "load" ? m.quantity : -m.quantity), 0);
+  const lowStock = products
+    .filter((p) => p.lowStockThreshold != null && stockOf(p.id) <= p.lowStockThreshold)
     .slice(0, 6);
 
   const markFollowUpDone = async (visitId) => {
@@ -165,6 +182,39 @@ export default function SalesHome({ nav }) {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Low stock ── */}
+      {lowStock.length > 0 && (
+        <div className="shs-lowstock">
+          <div className="shs-roadmap-head">
+            <div className="shs-roadmap-ico" style={{ background: "#f0fdfa" }}>
+              <i className="fa-solid fa-boxes-stacked" style={{ fontSize: 15, color: "#0f766e" }} />
+            </div>
+            <div className="shs-roadmap-title">مخزون منخفض</div>
+          </div>
+          <p className="shs-roadmap-sub">منتجات وصلت لحد التنبيه — قد تحتاج لتحميل كمية إضافية</p>
+          <div className="shs-lowstock-list">
+            {lowStock.map((p) => (
+              <div key={p.id} className="shs-lowstock-row">
+                <div className="shs-followup-info">
+                  <span className="shs-followup-name">{p.name}</span>
+                  <span className="shs-followup-date">
+                    <i className="fa-solid fa-cube" style={{ fontSize: 10 }} />
+                    المتبقي: {stockOf(p.id)} {p.unit}
+                  </span>
+                </div>
+                <button
+                  className="shs-followup-visit"
+                  onClick={() => nav("/sales/products/stock", { state: { productId: p.id, type: "load" } })}
+                >
+                  <i className="fa-solid fa-arrow-down" />
+                  تحميل
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}

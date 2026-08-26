@@ -418,6 +418,32 @@
   background: #dcfce7;
 }
 
+/* Low stock */
+.shs-lowstock {
+  margin: 24px 28px 0;
+  padding: 22px 24px;
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+.shs-lowstock-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.shs-lowstock-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  flex-wrap: wrap;
+}
+
 /* Roadmap */
 .shs-roadmap {
   margin: 24px 28px 28px;
@@ -508,7 +534,8 @@
   .shs-hero-h1 {
     font-size: 24px;
   }
-  .shs-followups {
+  .shs-followups,
+  .shs-lowstock {
     margin: 20px 20px 0;
   }
   .shs-roadmap {
