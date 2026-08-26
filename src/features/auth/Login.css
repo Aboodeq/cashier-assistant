@@ -1,24 +1,7 @@
-@import url("https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap");
-
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-body {
-  font-family: "Tajawal", sans-serif;
-  direction: rtl;
-}
-button,
-input {
-  font-family: "Tajawal", sans-serif;
-}
-input:focus,
-button:focus {
-  outline: none;
-}
+/* Global resets (box-sizing, body font/direction, focus outline) live in
+   src/index.css, which applies everywhere — this file only needs its own
+   `.lr-*` rules below, since (unlike the old per-page `<style>` tags) CSS
+   imports are bundled and active on every route, not just this one. */
 
 @keyframes gradShift {
   0%,

@@ -1,39 +1,15 @@
-@import url("https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap");
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-html,
-body,
-#root {
-  height: 100%;
-}
-body {
-  font-family: "Tajawal", sans-serif;
-  direction: rtl;
-  background: #f1f5f9;
-  overflow: hidden;
-  overflow-x: hidden;
-}
-button,
-input,
-select {
-  font-family: "Tajawal", sans-serif;
-}
-a {
-  text-decoration: none;
-  color: inherit;
-}
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
-  border-radius: 99px;
-}
+/*
+ * No global (body/html/#root/*) rules here on purpose: this file is a static
+ * `import` like every other feature's CSS, so — unlike the old per-page
+ * `<style>` tags that only existed in the DOM while that page was mounted —
+ * it's bundled and active on every route, all the time, including /login and
+ * /register. A `body { overflow: hidden }` here once made the shell's fixed
+ * viewport work, but it also broke scrolling on every other page. `.sh-root`
+ * below is fully self-contained (`height: 100vh; overflow: hidden;`), so it
+ * doesn't need any help from body/html — truly global rules belong in
+ * src/index.css instead, which is the only stylesheet meant to apply
+ * everywhere.
+ */
 
 @keyframes shGrad {
   0%,
@@ -518,9 +494,6 @@ a {
 
 /* ══ RESPONSIVE ══ */
 @media (max-width: 768px) {
-  body {
-    overflow: hidden;
-  }
   .sh-sidebar {
     position: fixed;
     top: 0;
