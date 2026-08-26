@@ -83,7 +83,8 @@
 /* ── Shell ── */
 .sh-root {
   display: flex;
-  height: 100vh;
+  height: 100vh; /* fallback for browsers without dvh support */
+  height: 100dvh; /* tracks the actual visible mobile viewport as the browser's address bar shows/hides */
   overflow: hidden;
   font-family: "Tajawal", sans-serif;
   direction: rtl;
@@ -138,7 +139,8 @@
   flex-direction: column;
   height: 100%;
   padding: 20px 12px 14px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   transition: opacity 0.2s;
 }
 
@@ -444,6 +446,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1;
+  min-width: 0;
 }
 .sh-topbar-burger {
   width: 40px;
@@ -457,6 +461,7 @@
   cursor: pointer;
   color: #475569;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 .sh-topbar-burger:hover {
   background: #f1f5f9;
@@ -466,19 +471,26 @@
   display: flex;
   align-items: center;
   gap: 7px;
+  min-width: 0;
 }
 .sh-topbar-trail-home {
   color: #94a3b8;
+  flex-shrink: 0;
 }
 .sh-topbar-trail-cur {
   font-size: 15px;
   font-weight: 800;
   color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 .sh-topbar-l {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 .sh-topbar-date {
   font-size: 12px;
@@ -529,11 +541,15 @@
 /* ══ RESPONSIVE ══ */
 @media (max-width: 768px) {
   .sh-sidebar {
+    /* top:0 + bottom:0 alone give a correct, chrome-aware fixed height —
+       an explicit height:100vh here used the *largest* possible mobile
+       viewport (address bar hidden), which could exceed what's actually
+       visible and push the logout button/lower nav items off-screen with
+       no way to scroll to them. */
     position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
-    height: 100vh;
   }
   .sh-page {
     overflow-y: auto;
