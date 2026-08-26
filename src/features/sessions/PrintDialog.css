@@ -1,0 +1,212 @@
+@keyframes pdIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pdBoxIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes pdOptIn {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.pd-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 12, 41, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: pdIn 0.2s ease both;
+}
+.pd-box {
+  background: #fff;
+  border-radius: 24px;
+  padding: 0;
+  width: 100%;
+  max-width: 420px;
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0, 0, 0, 0.04);
+  animation: pdBoxIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  overflow: hidden;
+}
+.pd-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(135deg, #fafbff, #f5f3ff);
+}
+.pd-header-ico {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pd-title {
+  font-size: 16px;
+  font-weight: 900;
+  color: #1e293b;
+  margin-bottom: 2px;
+  letter-spacing: -0.3px;
+}
+.pd-subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 400;
+}
+.pd-options {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+  gap: 8px;
+}
+.pd-opt {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: right;
+  width: 100%;
+  animation: pdOptIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.pd-opt:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.pd-opt:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.pd-opt:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.pd-opt--dep {
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+}
+.pd-opt--dep:hover {
+  background: #dcfce7;
+  border-color: #059669;
+  transform: translateX(-4px) scale(1.01);
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.18);
+}
+.pd-opt--wth {
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+}
+.pd-opt--wth:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+  transform: translateX(-4px) scale(1.01);
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.18);
+}
+.pd-opt--all {
+  background: #f5f3ff;
+  border: 1.5px solid #ddd6fe;
+}
+.pd-opt--all:hover {
+  background: #ede9fe;
+  border-color: #4f46e5;
+  transform: translateX(-4px) scale(1.01);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.18);
+}
+.pd-opt-ico {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pd-opt-ico--dep {
+  background: #d1fae5;
+}
+.pd-opt-ico--wth {
+  background: #fee2e2;
+}
+.pd-opt-ico--all {
+  background: #ede9fe;
+}
+.pd-opt-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  text-align: right;
+}
+.pd-opt-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1e293b;
+}
+.pd-opt-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 400;
+  line-height: 1.4;
+}
+.pd-opt-arrow {
+  font-size: 12px;
+  color: #cbd5e1;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.pd-opt:hover .pd-opt-arrow {
+  color: #475569;
+  transform: translateX(-3px);
+}
+.pd-cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: calc(100% - 32px);
+  margin: 0 16px 16px;
+  padding: 12px;
+  min-height: 44px;
+  border-radius: 11px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pd-cancel:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #cbd5e1;
+}

@@ -2,9 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase/config";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
+import Login from "./features/auth/Login";
+import Register from "./features/auth/Register";
+import DashboardShell from "./features/dashboard/DashboardShell";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -53,7 +53,7 @@ function App() {
       <Routes>
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
         <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
-        <Route path="/dashboard/*" element={user ? <Dashboard /> : <Navigate to="/login" />} />
+        <Route path="/dashboard/*" element={user ? <DashboardShell /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
       </Routes>
     </BrowserRouter>

@@ -40,6 +40,15 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body {
+  /* Defensive guard: nothing in the app should need horizontal scroll on a phone —
+     if a layout bug ever overflows the viewport width, clip it instead of showing
+     a horizontal scrollbar / stray whitespace strip. */
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 body {
   font-family: var(--font);
   direction: rtl;
