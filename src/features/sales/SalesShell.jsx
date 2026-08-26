@@ -5,6 +5,7 @@ import PaymentsPage from "./PaymentsPage";
 import ProductsPage from "./ProductsPage";
 import SalesHome from "./SalesHome";
 import SalesOrdersPage from "./SalesOrdersPage";
+import SettingsPage from "./SettingsPage";
 import StockPage from "./StockPage";
 import TerritoriesPage from "./TerritoriesPage";
 import VisitsPage from "./VisitsPage";
@@ -24,6 +25,7 @@ export default function SalesShell() {
         <Route path="products" element={<ProductsPage />} />
         <Route path="products/stock" element={<StockPage />} />
         <Route path="orders" element={<SalesOrdersPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Routes>
     </AppShell>
   );

@@ -4,13 +4,22 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
+import { formatMoney, hasDirectPrice, priceIn, useExchangeRate } from "./currency";
 import "./ProductsPage.css";
 
-const emptyForm = { name: "", unit: "قطعة", price: "", lowStockThreshold: "", notes: "" };
+const emptyForm = {
+  name: "",
+  unit: "قطعة",
+  priceUSD: "",
+  priceSYP: "",
+  lowStockThreshold: "",
+  notes: "",
+};
 
 export default function ProductsPage() {
   const uid = auth.currentUser?.uid;
   const navigate = useNavigate();
+  const rate = useExchangeRate();
   const products = useFirestoreCollection(uid && ["users", uid, "salesProducts"], {
     orderByField: "createdAt",
   });
@@ -34,12 +43,13 @@ export default function ProductsPage() {
   const handleAdd = async (e) => {
     e.preventDefault();
     const name = form.name.trim();
-    if (!name) return;
+    if (!name || (!form.priceUSD && !form.priceSYP)) return;
     setLoading(true);
     await addDoc(collection(db, "users", uid, "salesProducts"), {
       name,
       unit: form.unit.trim() || "قطعة",
-      price: Number(form.price) || 0,
+      priceUSD: form.priceUSD === "" ? null : Number(form.priceUSD),
+      priceSYP: form.priceSYP === "" ? null : Number(form.priceSYP),
       lowStockThreshold: form.lowStockThreshold === "" ? null : Number(form.lowStockThreshold),
       notes: form.notes.trim(),
       createdAt: Date.now(),
@@ -61,11 +71,12 @@ export default function ProductsPage() {
 
   const handleEdit = async (id) => {
     const name = editData.name.trim();
-    if (!name) return;
+    if (!name || (!editData.priceUSD && !editData.priceSYP)) return;
     await updateDoc(doc(db, "users", uid, "salesProducts", id), {
       name,
       unit: editData.unit.trim() || "قطعة",
-      price: Number(editData.price) || 0,
+      priceUSD: editData.priceUSD === "" ? null : Number(editData.priceUSD),
+      priceSYP: editData.priceSYP === "" ? null : Number(editData.priceSYP),
       lowStockThreshold: editData.lowStockThreshold === "" ? null : Number(editData.lowStockThreshold),
       notes: editData.notes.trim(),
     });
@@ -145,17 +156,43 @@ export default function ProductsPage() {
               </div>
               <div className="pd-field">
                 <label className="pd-lbl">
-                  <i className="fa-solid fa-sack-dollar" />
-                  السعر
+                  <i className="fa-solid fa-dollar-sign" />
+                  السعر (دولار)
                 </label>
                 <div className="pd-inp-wrap">
                   <input
                     className="pd-inp"
                     type="number"
                     min="0"
-                    placeholder="0"
-                    value={form.price}
-                    onChange={setField("price")}
+                    step="any"
+                    placeholder={
+                      form.priceSYP && rate > 0
+                        ? `≈ ${(Number(form.priceSYP) / rate).toLocaleString()}`
+                        : "0"
+                    }
+                    value={form.priceUSD}
+                    onChange={setField("priceUSD")}
+                  />
+                </div>
+              </div>
+              <div className="pd-field">
+                <label className="pd-lbl">
+                  <i className="fa-solid fa-money-bill" />
+                  السعر (ل.س)
+                </label>
+                <div className="pd-inp-wrap">
+                  <input
+                    className="pd-inp"
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder={
+                      form.priceUSD && rate > 0
+                        ? `≈ ${(Number(form.priceUSD) * rate).toLocaleString()}`
+                        : "0"
+                    }
+                    value={form.priceSYP}
+                    onChange={setField("priceSYP")}
                   />
                 </div>
               </div>
@@ -179,7 +216,11 @@ export default function ProductsPage() {
                 <label className="pd-lbl" style={{ opacity: 0 }}>
                   _
                 </label>
-                <button type="submit" className="pd-add-btn" disabled={loading || !form.name.trim()}>
+                <button
+                  type="submit"
+                  className="pd-add-btn"
+                  disabled={loading || !form.name.trim() || (!form.priceUSD && !form.priceSYP)}
+                >
                   {loading ? (
                     <>
                       <div className="pd-spinner" />
@@ -260,9 +301,16 @@ export default function ProductsPage() {
                           <input
                             className="pd-edit-input"
                             type="number"
-                            value={editData.price}
-                            onChange={(e) => setEditData((d) => ({ ...d, price: e.target.value }))}
-                            placeholder="السعر"
+                            value={editData.priceUSD}
+                            onChange={(e) => setEditData((d) => ({ ...d, priceUSD: e.target.value }))}
+                            placeholder="السعر ($)"
+                          />
+                          <input
+                            className="pd-edit-input"
+                            type="number"
+                            value={editData.priceSYP}
+                            onChange={(e) => setEditData((d) => ({ ...d, priceSYP: e.target.value }))}
+                            placeholder="السعر (ل.س)"
                           />
                           <input
                             className="pd-edit-input"
@@ -294,8 +342,16 @@ export default function ProductsPage() {
                           </div>
                           <div className="pd-item-meta">
                             <span className="pd-item-price">
-                              <i className="fa-solid fa-sack-dollar" style={{ fontSize: 10 }} />
-                              {p.price.toLocaleString()} / {p.unit}
+                              <i className="fa-solid fa-dollar-sign" style={{ fontSize: 10 }} />
+                              {formatMoney(priceIn(p, "USD", rate), "USD")}
+                              {!hasDirectPrice(p, "USD") && rate > 0 && " (تقديري)"}
+                              {" "}/ {p.unit}
+                            </span>
+                            <span className="pd-item-price">
+                              <i className="fa-solid fa-money-bill" style={{ fontSize: 10 }} />
+                              {formatMoney(priceIn(p, "SYP", rate), "SYP")}
+                              {!hasDirectPrice(p, "SYP") && rate > 0 && " (تقديري)"}
+                              {" "}/ {p.unit}
                             </span>
                           </div>
                           {p.notes && <div className="pd-item-notes">{p.notes}</div>}
@@ -333,7 +389,8 @@ export default function ProductsPage() {
                               setEditData({
                                 name: p.name,
                                 unit: p.unit || "قطعة",
-                                price: p.price ?? "",
+                                priceUSD: p.priceUSD ?? "",
+                                priceSYP: p.priceSYP ?? "",
                                 lowStockThreshold: p.lowStockThreshold ?? "",
                                 notes: p.notes || "",
                               });

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
+import { formatDual } from "./currency";
 import "./ClientsPage.css";
 
 const CATEGORIES = [
@@ -34,13 +35,18 @@ export default function ClientsPage() {
       .filter((v) => v.clientId === clientId)
       .reduce((latest, v) => (!latest || v.date > latest ? v.date : latest), null);
 
-  const balanceOf = (clientId) => {
+  // Balances are tracked per currency — a client can owe both USD and SYP at
+  // once, never blended into one converted figure.
+  const balanceIn = (clientId, currency) => {
     const owed = orders
       .filter((o) => o.clientId === clientId && o.paymentType === "credit")
-      .reduce((s, o) => s + o.total, 0);
-    const paid = payments.filter((p) => p.clientId === clientId).reduce((s, p) => s + p.amount, 0);
+      .reduce((s, o) => s + (currency === "USD" ? o.totalUSD || 0 : o.totalSYP || 0), 0);
+    const paid = payments
+      .filter((p) => p.clientId === clientId && p.currency === currency)
+      .reduce((s, p) => s + p.amount, 0);
     return owed - paid;
   };
+  const hasBalance = (clientId) => balanceIn(clientId, "USD") > 0 || balanceIn(clientId, "SYP") > 0;
 
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
@@ -416,10 +422,10 @@ export default function ClientsPage() {
                           <div className="cl-item-name-row">
                             <span className="cl-item-name">{c.name}</span>
                             <span className={`cl-cat ${cat.cls}`}>{cat.label}</span>
-                            {balanceOf(c.id) > 0 && (
+                            {hasBalance(c.id) && (
                               <span className="cl-cat cl-cat--debt">
                                 <i className="fa-solid fa-scale-balanced" style={{ fontSize: 9 }} />
-                                مستحق: {balanceOf(c.id).toLocaleString()}
+                                مستحق: {formatDual(balanceIn(c.id, "USD"), balanceIn(c.id, "SYP"))}
                               </span>
                             )}
                           </div>
@@ -469,7 +475,7 @@ export default function ClientsPage() {
                             <i className="fa-solid fa-cart-shopping" />
                             بيع
                           </button>
-                          {balanceOf(c.id) > 0 && (
+                          {hasBalance(c.id) && (
                             <button
                               className="cl-btn cl-btn--collect"
                               onClick={() =>

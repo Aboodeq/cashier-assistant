@@ -4,10 +4,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
+import { formatDual, formatMoney } from "./currency";
 import "./PaymentsPage.css";
 
 const today = () => new Date().toISOString().split("T")[0];
-const emptyForm = { clientId: "", amount: "", date: today(), notes: "" };
+const emptyForm = { clientId: "", currency: "USD", amount: "", date: today(), notes: "" };
 
 export default function PaymentsPage() {
   const uid = auth.currentUser?.uid;
@@ -34,20 +35,22 @@ export default function PaymentsPage() {
 
   const setField = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
 
-  const balanceOf = (clientId) => {
+  // Balances are tracked per currency — a client can owe both USD and SYP at
+  // once, and we never blend them into one converted figure.
+  const balanceIn = (clientId, currency) => {
     const owed = orders
       .filter((o) => o.clientId === clientId && o.paymentType === "credit")
-      .reduce((s, o) => s + o.total, 0);
+      .reduce((s, o) => s + (currency === "USD" ? o.totalUSD || 0 : o.totalSYP || 0), 0);
     const paid = payments
-      .filter((p) => p.clientId === clientId)
+      .filter((p) => p.clientId === clientId && p.currency === currency)
       .reduce((s, p) => s + p.amount, 0);
     return owed - paid;
   };
 
   const balances = clients
-    .map((c) => ({ ...c, balance: balanceOf(c.id) }))
-    .filter((c) => c.balance > 0)
-    .sort((a, b) => b.balance - a.balance);
+    .map((c) => ({ ...c, usd: balanceIn(c.id, "USD"), syp: balanceIn(c.id, "SYP") }))
+    .filter((c) => c.usd > 0 || c.syp > 0)
+    .sort((a, b) => b.usd + b.syp / 100000 - (a.usd + a.syp / 100000));
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -57,12 +60,13 @@ export default function PaymentsPage() {
     await addDoc(collection(db, "users", uid, "salesPayments"), {
       clientId: form.clientId,
       clientName: client?.name || "",
+      currency: form.currency,
       amount: Number(form.amount),
       date: form.date,
       notes: form.notes.trim(),
       createdAt: Date.now(),
     });
-    setForm({ ...emptyForm, clientId: form.clientId });
+    setForm({ ...emptyForm, clientId: form.clientId, currency: form.currency });
     setLoading(false);
   };
 
@@ -83,6 +87,7 @@ export default function PaymentsPage() {
     await updateDoc(doc(db, "users", uid, "salesPayments", id), {
       clientId: editData.clientId,
       clientName: client?.name || "",
+      currency: editData.currency,
       amount: Number(editData.amount),
       date: editData.date,
       notes: editData.notes.trim(),
@@ -137,10 +142,16 @@ export default function PaymentsPage() {
                       <div className="py-balance-territory">{c.territoryName}</div>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-                      <span className="py-balance-amount">{c.balance.toLocaleString()}</span>
+                      <span className="py-balance-amount">{formatDual(c.usd, c.syp)}</span>
                       <button
                         className="py-balance-btn"
-                        onClick={() => setForm((p) => ({ ...p, clientId: c.id }))}
+                        onClick={() =>
+                          setForm((p) => ({
+                            ...p,
+                            clientId: c.id,
+                            currency: c.usd > 0 ? "USD" : "SYP",
+                          }))
+                        }
                       >
                         <i className="fa-solid fa-hand-holding-dollar" />
                         تحصيل
@@ -183,6 +194,18 @@ export default function PaymentsPage() {
                 </div>
                 <div className="py-field">
                   <label className="py-lbl">
+                    <i className="fa-solid fa-money-bill-wave" />
+                    العملة
+                  </label>
+                  <div className="py-inp-wrap">
+                    <select className="py-inp" value={form.currency} onChange={setField("currency")}>
+                      <option value="USD">دولار</option>
+                      <option value="SYP">ليرة سورية</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="py-field">
+                  <label className="py-lbl">
                     <i className="fa-solid fa-sack-dollar" />
                     المبلغ
                   </label>
@@ -191,6 +214,7 @@ export default function PaymentsPage() {
                       className="py-inp"
                       type="number"
                       min="1"
+                      step="any"
                       placeholder="0"
                       value={form.amount}
                       onChange={setField("amount")}
@@ -303,6 +327,14 @@ export default function PaymentsPage() {
                             </option>
                           ))}
                         </select>
+                        <select
+                          className="py-edit-select"
+                          value={editData.currency}
+                          onChange={(e) => setEditData((d) => ({ ...d, currency: e.target.value }))}
+                        >
+                          <option value="USD">دولار</option>
+                          <option value="SYP">ليرة سورية</option>
+                        </select>
                         <input
                           className="py-edit-input"
                           type="number"
@@ -329,7 +361,7 @@ export default function PaymentsPage() {
                         <div className="py-item-meta">
                           <span className="py-item-amount">
                             <i className="fa-solid fa-sack-dollar" style={{ fontSize: 10 }} />
-                            {p.amount.toLocaleString()}
+                            {formatMoney(p.amount, p.currency || "USD")}
                           </span>
                           <span>
                             <i className="fa-regular fa-calendar" style={{ fontSize: 10 }} />
@@ -359,6 +391,7 @@ export default function PaymentsPage() {
                             setEditId(p.id);
                             setEditData({
                               clientId: p.clientId,
+                              currency: p.currency || "USD",
                               amount: p.amount,
                               date: p.date,
                               notes: p.notes || "",
@@ -390,7 +423,7 @@ export default function PaymentsPage() {
       <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
         title="تأكيد حذف الدفعة"
-        message={`سيتم حذف دفعة "${deleteTarget?.clientName || ""}" بقيمة ${deleteTarget?.amount?.toLocaleString() || ""}.`}
+        message={`سيتم حذف دفعة "${deleteTarget?.clientName || ""}" بقيمة ${deleteTarget ? formatMoney(deleteTarget.amount, deleteTarget.currency || "USD") : ""}.`}
         confirmLabel="حذف الدفعة"
         loading={Boolean(deleteTarget && deleting === deleteTarget.id)}
         onCancel={() => setDeleteTarget(null)}

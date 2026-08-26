@@ -1,6 +1,7 @@
 import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
+import { formatDual } from "./currency";
 import "./SalesHome.css";
 
 const SECTIONS = [
@@ -65,12 +66,17 @@ export default function SalesHome({ nav }) {
   const payments = useFirestoreCollection(uid && ["users", uid, "salesPayments"]);
   const name = auth.currentUser?.email?.split("@")[0] || "مندوب المبيعات";
 
-  const salesToday = orders
-    .filter((o) => o.date === today())
-    .reduce((s, o) => s + o.total, 0);
-  const totalOwed =
-    orders.filter((o) => o.paymentType === "credit").reduce((s, o) => s + o.total, 0) -
-    payments.reduce((s, p) => s + p.amount, 0);
+  const todaysOrders = orders.filter((o) => o.date === today());
+  const salesTodayUSD = todaysOrders.reduce((s, o) => s + (o.totalUSD || 0), 0);
+  const salesTodaySYP = todaysOrders.reduce((s, o) => s + (o.totalSYP || 0), 0);
+
+  const creditOrders = orders.filter((o) => o.paymentType === "credit");
+  const owedUSD =
+    creditOrders.reduce((s, o) => s + (o.totalUSD || 0), 0) -
+    payments.filter((p) => p.currency === "USD").reduce((s, p) => s + p.amount, 0);
+  const owedSYP =
+    creditOrders.reduce((s, o) => s + (o.totalSYP || 0), 0) -
+    payments.filter((p) => p.currency === "SYP").reduce((s, p) => s + p.amount, 0);
 
   const visitsToday = visits.filter((v) => v.date === today()).length;
   const followUps = visits
@@ -138,13 +144,19 @@ export default function SalesHome({ nav }) {
               <div className="shs-stat-val">{visitsToday}</div>
               <div className="shs-stat-lbl">زيارة اليوم</div>
             </div>
-            <div className="shs-stat-card">
-              <div className="shs-stat-val">{salesToday.toLocaleString()}</div>
-              <div className="shs-stat-lbl">مبيعات اليوم</div>
-            </div>
-            {totalOwed > 0 && (
+            {(salesTodayUSD > 0 || salesTodaySYP > 0) && (
               <div className="shs-stat-card">
-                <div className="shs-stat-val">{totalOwed.toLocaleString()}</div>
+                <div className="shs-stat-val" style={{ fontSize: 18 }}>
+                  {formatDual(salesTodayUSD, salesTodaySYP)}
+                </div>
+                <div className="shs-stat-lbl">مبيعات اليوم</div>
+              </div>
+            )}
+            {(owedUSD > 0 || owedSYP > 0) && (
+              <div className="shs-stat-card">
+                <div className="shs-stat-val" style={{ fontSize: 18 }}>
+                  {formatDual(owedUSD, owedSYP)}
+                </div>
                 <div className="shs-stat-lbl">مستحق على العملاء</div>
               </div>
             )}
