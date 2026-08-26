@@ -376,19 +376,40 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
-.tr-edit-input {
-  flex: 1;
-  padding: 7px 12px;
-  border: 1.5px solid #c2410c;
-  border-radius: 9px;
-  font-size: 14px;
-  color: #1e293b;
-  background: #fff7ed;
-  text-align: right;
+/* Edit modal */
+.tr-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-.tr-edit-input:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.12);
+.tr-modal-lbl {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 6px;
+}
+.tr-modal-lbl i {
+  font-size: 10px;
+  color: #c2410c;
+}
+.tr-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.tr-modal-actions .tr-btn--save {
+  flex: 1;
+  justify-content: center;
+  min-height: 44px;
+}
+.tr-modal-actions .tr-btn--cancel {
+  min-height: 44px;
+  padding: 0 20px;
 }
 .tr-item-actions {
   display: flex;

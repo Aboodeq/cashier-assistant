@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
+import Modal from "../../components/Modal";
 import { formatDual, formatMoney } from "./currency";
 import "./PaymentsPage.css";
 
@@ -314,105 +315,48 @@ export default function PaymentsPage() {
                     <div className="py-item-ico">
                       <i className="fa-solid fa-hand-holding-dollar" style={{ fontSize: 16, color: "#16a34a" }} />
                     </div>
-                    {editId === p.id ? (
-                      <div className="py-edit-grid">
-                        <select
-                          className="py-edit-select"
-                          value={editData.clientId}
-                          onChange={(e) => setEditData((d) => ({ ...d, clientId: e.target.value }))}
-                        >
-                          {clients.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          className="py-edit-select"
-                          value={editData.currency}
-                          onChange={(e) => setEditData((d) => ({ ...d, currency: e.target.value }))}
-                        >
-                          <option value="USD">دولار</option>
-                          <option value="SYP">ليرة سورية</option>
-                        </select>
-                        <input
-                          className="py-edit-input"
-                          type="number"
-                          min="1"
-                          value={editData.amount}
-                          onChange={(e) => setEditData((d) => ({ ...d, amount: e.target.value }))}
-                        />
-                        <input
-                          className="py-edit-input"
-                          type="date"
-                          value={editData.date}
-                          onChange={(e) => setEditData((d) => ({ ...d, date: e.target.value }))}
-                        />
-                        <input
-                          className="py-edit-input py-edit-full"
-                          value={editData.notes}
-                          onChange={(e) => setEditData((d) => ({ ...d, notes: e.target.value }))}
-                          placeholder="ملاحظات"
-                        />
+                    <div className="py-item-info">
+                      <div className="py-item-name">{p.clientName}</div>
+                      <div className="py-item-meta">
+                        <span className="py-item-amount">
+                          <i className="fa-solid fa-sack-dollar" style={{ fontSize: 10 }} />
+                          {formatMoney(p.amount, p.currency || "USD")}
+                        </span>
+                        <span>
+                          <i className="fa-regular fa-calendar" style={{ fontSize: 10 }} />
+                          {p.date}
+                        </span>
                       </div>
-                    ) : (
-                      <div className="py-item-info">
-                        <div className="py-item-name">{p.clientName}</div>
-                        <div className="py-item-meta">
-                          <span className="py-item-amount">
-                            <i className="fa-solid fa-sack-dollar" style={{ fontSize: 10 }} />
-                            {formatMoney(p.amount, p.currency || "USD")}
-                          </span>
-                          <span>
-                            <i className="fa-regular fa-calendar" style={{ fontSize: 10 }} />
-                            {p.date}
-                          </span>
-                        </div>
-                        {p.notes && <div className="py-item-notes">{p.notes}</div>}
-                      </div>
-                    )}
+                      {p.notes && <div className="py-item-notes">{p.notes}</div>}
+                    </div>
                   </div>
                   <div className="py-item-actions">
-                    {editId === p.id ? (
-                      <>
-                        <button className="py-btn py-btn--save" onClick={() => handleEdit(p.id)}>
-                          <i className="fa-solid fa-check" />
-                          حفظ
-                        </button>
-                        <button className="py-btn py-btn--cancel" onClick={() => setEditId(null)}>
-                          <i className="fa-solid fa-xmark" />
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          className="py-btn py-btn--edit"
-                          onClick={() => {
-                            setEditId(p.id);
-                            setEditData({
-                              clientId: p.clientId,
-                              currency: p.currency || "USD",
-                              amount: p.amount,
-                              date: p.date,
-                              notes: p.notes || "",
-                            });
-                          }}
-                        >
-                          <i className="fa-solid fa-pen" />
-                        </button>
-                        <button
-                          className="py-btn py-btn--del"
-                          onClick={() => setDeleteTarget(p)}
-                          disabled={deleting === p.id}
-                        >
-                          {deleting === p.id ? (
-                            <div className="py-spinner py-spinner--red" />
-                          ) : (
-                            <i className="fa-solid fa-trash" />
-                          )}
-                        </button>
-                      </>
-                    )}
+                    <button
+                      className="py-btn py-btn--edit"
+                      onClick={() => {
+                        setEditId(p.id);
+                        setEditData({
+                          clientId: p.clientId,
+                          currency: p.currency || "USD",
+                          amount: p.amount,
+                          date: p.date,
+                          notes: p.notes || "",
+                        });
+                      }}
+                    >
+                      <i className="fa-solid fa-pen" />
+                    </button>
+                    <button
+                      className="py-btn py-btn--del"
+                      onClick={() => setDeleteTarget(p)}
+                      disabled={deleting === p.id}
+                    >
+                      {deleting === p.id ? (
+                        <div className="py-spinner py-spinner--red" />
+                      ) : (
+                        <i className="fa-solid fa-trash" />
+                      )}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -420,6 +364,109 @@ export default function PaymentsPage() {
           )}
         </div>
       </div>
+      <Modal
+        open={Boolean(editId)}
+        onClose={() => setEditId(null)}
+        icon="fa-solid fa-pen"
+        title="تعديل الدفعة"
+        subtitle="عدّل بيانات الدفعة المحصّلة"
+      >
+        <div className="py-modal-form">
+          <div className="py-field">
+            <label className="py-lbl">
+              <i className="fa-solid fa-address-book" />
+              العميل
+            </label>
+            <div className="py-inp-wrap">
+              <select
+                className="py-inp"
+                value={editData.clientId}
+                onChange={(e) => setEditData((d) => ({ ...d, clientId: e.target.value }))}
+              >
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="py-field">
+            <label className="py-lbl">
+              <i className="fa-solid fa-money-bill-wave" />
+              العملة
+            </label>
+            <div className="py-inp-wrap">
+              <select
+                className="py-inp"
+                value={editData.currency}
+                onChange={(e) => setEditData((d) => ({ ...d, currency: e.target.value }))}
+              >
+                <option value="USD">دولار</option>
+                <option value="SYP">ليرة سورية</option>
+              </select>
+            </div>
+          </div>
+          <div className="py-field">
+            <label className="py-lbl">
+              <i className="fa-solid fa-sack-dollar" />
+              المبلغ
+            </label>
+            <div className="py-inp-wrap">
+              <input
+                className="py-inp"
+                type="number"
+                min="1"
+                step="any"
+                value={editData.amount}
+                onChange={(e) => setEditData((d) => ({ ...d, amount: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="py-field">
+            <label className="py-lbl">
+              <i className="fa-regular fa-calendar" />
+              التاريخ
+            </label>
+            <div className="py-inp-wrap">
+              <input
+                className="py-inp"
+                type="date"
+                value={editData.date}
+                onChange={(e) => setEditData((d) => ({ ...d, date: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="py-field">
+            <label className="py-lbl">
+              <i className="fa-regular fa-note-sticky" />
+              ملاحظات
+            </label>
+            <div className="py-inp-wrap">
+              <input
+                className="py-inp"
+                placeholder="اختياري..."
+                value={editData.notes}
+                onChange={(e) => setEditData((d) => ({ ...d, notes: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="py-modal-actions">
+            <button
+              type="button"
+              className="py-add-btn py-modal-save"
+              onClick={() => handleEdit(editId)}
+              disabled={!editData.clientId || !Number(editData.amount)}
+            >
+              <i className="fa-solid fa-check" />
+              حفظ التعديلات
+            </button>
+            <button type="button" className="py-btn py-btn--cancel" onClick={() => setEditId(null)}>
+              إلغاء
+            </button>
+          </div>
+        </div>
+      </Modal>
       <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
         title="تأكيد حذف الدفعة"

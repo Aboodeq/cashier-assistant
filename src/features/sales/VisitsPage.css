@@ -446,35 +446,14 @@ select.vs-inp {
 .vs-followup-btn:hover {
   background: #fff;
 }
-.vs-edit-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+.vs-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+.vs-modal-save {
   flex: 1;
-  min-width: 260px;
-}
-.vs-edit-grid .vs-edit-full {
-  grid-column: span 2;
-}
-.vs-edit-input,
-.vs-edit-select {
-  width: 100%;
-  padding: 7px 12px;
-  border: 1.5px solid #0369a1;
-  border-radius: 9px;
-  font-size: 13px;
-  color: #1e293b;
-  background: #f0f9ff;
-  text-align: right;
-}
-.vs-edit-select {
-  appearance: none;
-  cursor: pointer;
-}
-.vs-edit-input:focus,
-.vs-edit-select:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.12);
+  justify-content: center;
+  min-height: 44px;
 }
 .vs-item-actions {
   display: flex;
@@ -575,10 +554,7 @@ select.vs-inp {
   .vs-header-badge {
     display: none;
   }
-  .vs-edit-grid {
-    grid-template-columns: 1fr;
-  }
-  .vs-edit-grid .vs-edit-full {
-    grid-column: span 1;
+  .vs-modal-actions {
+    flex-direction: column-reverse;
   }
 }

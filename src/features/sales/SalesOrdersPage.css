@@ -663,35 +663,15 @@ select.so-inp {
   color: #94a3b8;
   margin-top: 4px;
 }
-.so-edit-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+.so-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.so-modal-save {
   flex: 1;
-  min-width: 260px;
-}
-.so-edit-grid .so-edit-full {
-  grid-column: span 2;
-}
-.so-edit-input,
-.so-edit-select {
-  width: 100%;
-  padding: 7px 12px;
-  border: 1.5px solid #4338ca;
-  border-radius: 9px;
-  font-size: 13px;
-  color: #1e293b;
-  background: #eef2ff;
-  text-align: right;
-}
-.so-edit-select {
-  appearance: none;
-  cursor: pointer;
-}
-.so-edit-input:focus,
-.so-edit-select:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.12);
+  justify-content: center;
+  min-height: 44px;
 }
 .so-item-actions {
   display: flex;
@@ -790,10 +770,7 @@ select.so-inp {
   .so-header-badge {
     display: none;
   }
-  .so-edit-grid {
-    grid-template-columns: 1fr;
-  }
-  .so-edit-grid .so-edit-full {
-    grid-column: span 1;
+  .so-modal-actions {
+    flex-direction: column-reverse;
   }
 }

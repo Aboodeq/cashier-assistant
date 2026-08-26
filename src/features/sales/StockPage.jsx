@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
+import Modal from "../../components/Modal";
 import "./StockPage.css";
 
 const TYPE_META = {
@@ -314,69 +315,26 @@ export default function StockPage() {
                       <div className="st-item-ico">
                         <i className={meta.icon} style={{ fontSize: 16, color: meta.color }} />
                       </div>
-                      {editId === m.id ? (
-                        <div className="st-edit-grid">
-                          <select
-                            className="st-edit-select"
-                            value={editData.productId}
-                            onChange={(e) => setEditData((p) => ({ ...p, productId: e.target.value }))}
-                          >
-                            {products.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.name}
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            className="st-edit-select"
-                            value={editData.type}
-                            onChange={(e) => setEditData((p) => ({ ...p, type: e.target.value }))}
-                          >
-                            <option value="load">تحميل</option>
-                            <option value="return">إرجاع</option>
-                          </select>
-                          <input
-                            className="st-edit-input"
-                            type="number"
-                            min="1"
-                            value={editData.quantity}
-                            onChange={(e) => setEditData((p) => ({ ...p, quantity: e.target.value }))}
-                          />
-                          <input
-                            className="st-edit-input"
-                            type="date"
-                            value={editData.date}
-                            onChange={(e) => setEditData((p) => ({ ...p, date: e.target.value }))}
-                          />
-                          <input
-                            className="st-edit-input st-edit-full"
-                            value={editData.notes}
-                            onChange={(e) => setEditData((p) => ({ ...p, notes: e.target.value }))}
-                            placeholder="ملاحظات"
-                          />
+                      <div className="st-item-info">
+                        <div className="st-item-name-row">
+                          <span className="st-item-name">{m.productName}</span>
+                          <span className="st-type-tag" style={{ background: meta.bg, color: meta.color }}>
+                            <i className={meta.icon} style={{ fontSize: 9 }} />
+                            {meta.label}
+                          </span>
                         </div>
-                      ) : (
-                        <div className="st-item-info">
-                          <div className="st-item-name-row">
-                            <span className="st-item-name">{m.productName}</span>
-                            <span className="st-type-tag" style={{ background: meta.bg, color: meta.color }}>
-                              <i className={meta.icon} style={{ fontSize: 9 }} />
-                              {meta.label}
-                            </span>
-                          </div>
-                          <div className="st-item-meta">
-                            <span>
-                              <i className="fa-solid fa-hashtag" style={{ fontSize: 10 }} />
-                              {m.quantity} {m.unit}
-                            </span>
-                            <span>
-                              <i className="fa-regular fa-calendar" style={{ fontSize: 10 }} />
-                              {m.date}
-                            </span>
-                          </div>
-                          {m.notes && <div className="st-item-notes">{m.notes}</div>}
+                        <div className="st-item-meta">
+                          <span>
+                            <i className="fa-solid fa-hashtag" style={{ fontSize: 10 }} />
+                            {m.quantity} {m.unit}
+                          </span>
+                          <span>
+                            <i className="fa-regular fa-calendar" style={{ fontSize: 10 }} />
+                            {m.date}
+                          </span>
                         </div>
-                      )}
+                        {m.notes && <div className="st-item-notes">{m.notes}</div>}
+                      </div>
                     </div>
                     <div className="st-item-actions">
                       {m.type === "sale" ? (
@@ -384,16 +342,6 @@ export default function StockPage() {
                           <i className="fa-solid fa-lock" style={{ fontSize: 10 }} /> من عملية بيع —
                           عدّلها من صفحة المبيعات
                         </span>
-                      ) : editId === m.id ? (
-                        <>
-                          <button className="st-btn st-btn--save" onClick={() => handleEdit(m.id)}>
-                            <i className="fa-solid fa-check" />
-                            حفظ
-                          </button>
-                          <button className="st-btn st-btn--cancel" onClick={() => setEditId(null)}>
-                            <i className="fa-solid fa-xmark" />
-                          </button>
-                        </>
                       ) : (
                         <>
                           <button
@@ -441,6 +389,119 @@ export default function StockPage() {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
+      <Modal
+        open={Boolean(editId)}
+        onClose={() => setEditId(null)}
+        icon="fa-solid fa-clock-rotate-left"
+        title="تعديل حركة المخزون"
+        subtitle={editId ? moves.find((m) => m.id === editId)?.productName : ""}
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleEdit(editId);
+          }}
+        >
+          <div className="st-type-toggle" style={{ marginBottom: 16 }}>
+            <button
+              type="button"
+              className={`st-type-btn st-type-btn--load ${editData.type === "load" ? "st-type-btn--on" : ""}`}
+              onClick={() => setEditData((p) => ({ ...p, type: "load" }))}
+            >
+              <i className="fa-solid fa-arrow-down" />
+              تحميل على السيارة
+            </button>
+            <button
+              type="button"
+              className={`st-type-btn st-type-btn--return ${editData.type === "return" ? "st-type-btn--on" : ""}`}
+              onClick={() => setEditData((p) => ({ ...p, type: "return" }))}
+            >
+              <i className="fa-solid fa-arrow-up" />
+              إرجاع للمستودع
+            </button>
+          </div>
+          <div className="st-add-grid">
+            <div className="st-field">
+              <label className="st-lbl">
+                <i className="fa-solid fa-box" />
+                المنتج
+              </label>
+              <div className="st-inp-wrap">
+                <select
+                  className="st-inp"
+                  value={editData.productId}
+                  onChange={(e) => setEditData((p) => ({ ...p, productId: e.target.value }))}
+                  required
+                >
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="st-field">
+              <label className="st-lbl">
+                <i className="fa-solid fa-hashtag" />
+                الكمية
+              </label>
+              <div className="st-inp-wrap">
+                <input
+                  className="st-inp"
+                  type="number"
+                  min="1"
+                  value={editData.quantity}
+                  onChange={(e) => setEditData((p) => ({ ...p, quantity: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
+            <div className="st-field">
+              <label className="st-lbl">
+                <i className="fa-regular fa-calendar" />
+                التاريخ
+              </label>
+              <div className="st-inp-wrap">
+                <input
+                  className="st-inp"
+                  type="date"
+                  value={editData.date}
+                  onChange={(e) => setEditData((p) => ({ ...p, date: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
+            <div className="st-field st-field--notes">
+              <label className="st-lbl">
+                <i className="fa-regular fa-note-sticky" />
+                ملاحظات
+              </label>
+              <div className="st-inp-wrap">
+                <input
+                  className="st-inp"
+                  value={editData.notes}
+                  onChange={(e) => setEditData((p) => ({ ...p, notes: e.target.value }))}
+                  placeholder="اختياري"
+                />
+              </div>
+            </div>
+            <div className="st-field st-field--actions">
+              <button
+                type="submit"
+                className="st-btn st-btn--save st-modal-save"
+                disabled={!editData.productId || !Number(editData.quantity)}
+              >
+                <i className="fa-solid fa-check" />
+                حفظ التغييرات
+              </button>
+              <button type="button" className="st-btn st-btn--cancel" onClick={() => setEditId(null)}>
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </form>
+      </Modal>
     </>
   );
 }

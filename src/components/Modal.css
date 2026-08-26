@@ -1,0 +1,121 @@
+@keyframes mdFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes mdPop {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.md-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: mdFade 0.18s ease both;
+}
+.md-box {
+  width: 100%;
+  max-height: min(720px, 90vh);
+  background: #fff;
+  border-radius: 20px;
+  box-shadow:
+    0 32px 80px rgba(15, 23, 42, 0.28),
+    0 0 0 1px rgba(15, 23, 42, 0.04);
+  animation: mdPop 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  direction: rtl;
+  text-align: right;
+}
+.md-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 22px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+.md-header-ico {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  background: #eef2ff;
+  color: #4338ca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+}
+.md-header-text {
+  flex: 1;
+  min-width: 0;
+}
+.md-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  color: #1e293b;
+  letter-spacing: -0.2px;
+}
+.md-subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+.md-close {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  border-radius: 10px;
+  border: none;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.md-close:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+.md-body {
+  padding: 20px 22px 22px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 600px) {
+  .md-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .md-box {
+    max-height: 92vh;
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+  }
+}

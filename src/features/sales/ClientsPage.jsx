@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
+import Modal from "../../components/Modal";
 import { formatDual } from "./currency";
 import "./ClientsPage.css";
 
@@ -363,165 +364,95 @@ export default function ClientsPage() {
                   <div key={c.id} className="cl-item" style={{ animationDelay: `${i * 0.04}s` }}>
                     <div className="cl-item-left">
                       <div className="cl-item-ava">{c.name.charAt(0)}</div>
-                      {editId === c.id ? (
-                        <div className="cl-edit-grid">
-                          <input
-                            className="cl-edit-input"
-                            value={editData.name}
-                            onChange={(e) => setEditData((p) => ({ ...p, name: e.target.value }))}
-                            placeholder="اسم العميل"
-                            autoFocus
-                          />
-                          <input
-                            className="cl-edit-input"
-                            value={editData.phone}
-                            onChange={(e) => setEditData((p) => ({ ...p, phone: e.target.value }))}
-                            placeholder="الهاتف"
-                          />
-                          <select
-                            className="cl-edit-select"
-                            value={editData.territoryId}
-                            onChange={(e) =>
-                              setEditData((p) => ({ ...p, territoryId: e.target.value }))
-                            }
-                          >
-                            {territories.map((t) => (
-                              <option key={t.id} value={t.id}>
-                                {t.name}
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            className="cl-edit-select"
-                            value={editData.category}
-                            onChange={(e) =>
-                              setEditData((p) => ({ ...p, category: e.target.value }))
-                            }
-                          >
-                            {CATEGORIES.map((cc) => (
-                              <option key={cc.value} value={cc.value}>
-                                {cc.label}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            className="cl-edit-input cl-edit-full"
-                            value={editData.address}
-                            onChange={(e) => setEditData((p) => ({ ...p, address: e.target.value }))}
-                            placeholder="العنوان"
-                          />
-                          <input
-                            className="cl-edit-input cl-edit-full"
-                            value={editData.notes}
-                            onChange={(e) => setEditData((p) => ({ ...p, notes: e.target.value }))}
-                            placeholder="ملاحظات"
-                          />
-                        </div>
-                      ) : (
-                        <div className="cl-item-info">
-                          <div className="cl-item-name-row">
-                            <span className="cl-item-name">{c.name}</span>
-                            <span className={`cl-cat ${cat.cls}`}>{cat.label}</span>
-                            {hasBalance(c.id) && (
-                              <span className="cl-cat cl-cat--debt">
-                                <i className="fa-solid fa-scale-balanced" style={{ fontSize: 9 }} />
-                                مستحق: {formatDual(balanceIn(c.id, "USD"), balanceIn(c.id, "SYP"))}
-                              </span>
-                            )}
-                          </div>
-                          <div className="cl-item-meta">
-                            <span className="cl-item-territory">
-                              <i className="fa-solid fa-map-location-dot" style={{ fontSize: 10 }} />
-                              {c.territoryName || "غير محدد"}
+                      <div className="cl-item-info">
+                        <div className="cl-item-name-row">
+                          <span className="cl-item-name">{c.name}</span>
+                          <span className={`cl-cat ${cat.cls}`}>{cat.label}</span>
+                          {hasBalance(c.id) && (
+                            <span className="cl-cat cl-cat--debt">
+                              <i className="fa-solid fa-scale-balanced" style={{ fontSize: 9 }} />
+                              مستحق: {formatDual(balanceIn(c.id, "USD"), balanceIn(c.id, "SYP"))}
                             </span>
-                            {c.phone && (
-                              <span>
-                                <i className="fa-solid fa-phone" style={{ fontSize: 10 }} />
-                                {c.phone}
-                              </span>
-                            )}
-                            {c.address && (
-                              <span>
-                                <i className="fa-solid fa-location-dot" style={{ fontSize: 10 }} />
-                                {c.address}
-                              </span>
-                            )}
+                          )}
+                        </div>
+                        <div className="cl-item-meta">
+                          <span className="cl-item-territory">
+                            <i className="fa-solid fa-map-location-dot" style={{ fontSize: 10 }} />
+                            {c.territoryName || "غير محدد"}
+                          </span>
+                          {c.phone && (
                             <span>
-                              <i className="fa-solid fa-route" style={{ fontSize: 10 }} />
-                              {lastVisitDate(c.id) ? `آخر زيارة: ${lastVisitDate(c.id)}` : "لا توجد زيارات بعد"}
+                              <i className="fa-solid fa-phone" style={{ fontSize: 10 }} />
+                              {c.phone}
                             </span>
-                          </div>
-                          {c.notes && <div className="cl-item-notes">{c.notes}</div>}
+                          )}
+                          {c.address && (
+                            <span>
+                              <i className="fa-solid fa-location-dot" style={{ fontSize: 10 }} />
+                              {c.address}
+                            </span>
+                          )}
+                          <span>
+                            <i className="fa-solid fa-route" style={{ fontSize: 10 }} />
+                            {lastVisitDate(c.id) ? `آخر زيارة: ${lastVisitDate(c.id)}` : "لا توجد زيارات بعد"}
+                          </span>
                         </div>
-                      )}
+                        {c.notes && <div className="cl-item-notes">{c.notes}</div>}
+                      </div>
                     </div>
                     <div className="cl-item-actions">
-                      {editId === c.id ? (
-                        <>
-                          <button className="cl-btn cl-btn--save" onClick={() => handleEdit(c.id)}>
-                            <i className="fa-solid fa-check" />
-                            حفظ
-                          </button>
-                          <button className="cl-btn cl-btn--cancel" onClick={() => setEditId(null)}>
-                            <i className="fa-solid fa-xmark" />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            className="cl-btn cl-btn--sell"
-                            onClick={() => navigate("/sales/orders", { state: { clientId: c.id } })}
-                          >
-                            <i className="fa-solid fa-cart-shopping" />
-                            بيع
-                          </button>
-                          {hasBalance(c.id) && (
-                            <button
-                              className="cl-btn cl-btn--collect"
-                              onClick={() =>
-                                navigate("/sales/clients/payments", { state: { clientId: c.id } })
-                              }
-                            >
-                              <i className="fa-solid fa-hand-holding-dollar" />
-                              تحصيل
-                            </button>
-                          )}
-                          <button
-                            className="cl-btn cl-btn--visit"
-                            onClick={() => navigate("/sales/visits", { state: { clientId: c.id } })}
-                          >
-                            <i className="fa-solid fa-route" />
-                            زيارة
-                          </button>
-                          <button
-                            className="cl-btn cl-btn--edit"
-                            onClick={() => {
-                              setEditId(c.id);
-                              setEditData({
-                                name: c.name,
-                                phone: c.phone || "",
-                                address: c.address || "",
-                                territoryId: c.territoryId || "",
-                                category: c.category || "new",
-                                notes: c.notes || "",
-                              });
-                            }}
-                          >
-                            <i className="fa-solid fa-pen" />
-                          </button>
-                          <button
-                            className="cl-btn cl-btn--del"
-                            onClick={() => setDeleteTarget(c)}
-                            disabled={deleting === c.id}
-                          >
-                            {deleting === c.id ? (
-                              <div className="cl-spinner cl-spinner--red" />
-                            ) : (
-                              <i className="fa-solid fa-trash" />
-                            )}
-                          </button>
-                        </>
+                      <button
+                        className="cl-btn cl-btn--sell"
+                        onClick={() => navigate("/sales/orders", { state: { clientId: c.id } })}
+                      >
+                        <i className="fa-solid fa-cart-shopping" />
+                        بيع
+                      </button>
+                      {hasBalance(c.id) && (
+                        <button
+                          className="cl-btn cl-btn--collect"
+                          onClick={() =>
+                            navigate("/sales/clients/payments", { state: { clientId: c.id } })
+                          }
+                        >
+                          <i className="fa-solid fa-hand-holding-dollar" />
+                          تحصيل
+                        </button>
                       )}
+                      <button
+                        className="cl-btn cl-btn--visit"
+                        onClick={() => navigate("/sales/visits", { state: { clientId: c.id } })}
+                      >
+                        <i className="fa-solid fa-route" />
+                        زيارة
+                      </button>
+                      <button
+                        className="cl-btn cl-btn--edit"
+                        onClick={() => {
+                          setEditId(c.id);
+                          setEditData({
+                            name: c.name,
+                            phone: c.phone || "",
+                            address: c.address || "",
+                            territoryId: c.territoryId || "",
+                            category: c.category || "new",
+                            notes: c.notes || "",
+                          });
+                        }}
+                      >
+                        <i className="fa-solid fa-pen" />
+                      </button>
+                      <button
+                        className="cl-btn cl-btn--del"
+                        onClick={() => setDeleteTarget(c)}
+                        disabled={deleting === c.id}
+                      >
+                        {deleting === c.id ? (
+                          <div className="cl-spinner cl-spinner--red" />
+                        ) : (
+                          <i className="fa-solid fa-trash" />
+                        )}
+                      </button>
                     </div>
                   </div>
                 );
@@ -539,6 +470,133 @@ export default function ClientsPage() {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
+      <Modal
+        open={Boolean(editId)}
+        onClose={() => setEditId(null)}
+        icon="fa-solid fa-address-book"
+        title="تعديل العميل"
+        subtitle={editId ? clients.find((c) => c.id === editId)?.name : ""}
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleEdit(editId);
+          }}
+          className="cl-add-grid"
+        >
+          <div className="cl-field">
+            <label className="cl-lbl">
+              <i className="fa-solid fa-user" />
+              اسم العميل
+            </label>
+            <div className="cl-inp-wrap">
+              <i className="fa-solid fa-user cl-ico" />
+              <input
+                className="cl-inp"
+                value={editData.name}
+                onChange={(e) => setEditData((p) => ({ ...p, name: e.target.value }))}
+                required
+                autoFocus
+              />
+            </div>
+          </div>
+          <div className="cl-field">
+            <label className="cl-lbl">
+              <i className="fa-solid fa-phone" />
+              الهاتف
+            </label>
+            <div className="cl-inp-wrap">
+              <i className="fa-solid fa-phone cl-ico" />
+              <input
+                className="cl-inp"
+                type="tel"
+                value={editData.phone}
+                onChange={(e) => setEditData((p) => ({ ...p, phone: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="cl-field">
+            <label className="cl-lbl">
+              <i className="fa-solid fa-map-location-dot" />
+              المنطقة
+            </label>
+            <div className="cl-inp-wrap">
+              <i className="fa-solid fa-map-location-dot cl-ico" />
+              <select
+                className="cl-inp"
+                value={editData.territoryId}
+                onChange={(e) => setEditData((p) => ({ ...p, territoryId: e.target.value }))}
+                required
+              >
+                {territories.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="cl-field">
+            <label className="cl-lbl">
+              <i className="fa-solid fa-star" />
+              التصنيف
+            </label>
+            <div className="cl-inp-wrap">
+              <i className="fa-solid fa-star cl-ico" />
+              <select
+                className="cl-inp"
+                value={editData.category}
+                onChange={(e) => setEditData((p) => ({ ...p, category: e.target.value }))}
+              >
+                {CATEGORIES.map((cc) => (
+                  <option key={cc.value} value={cc.value}>
+                    {cc.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="cl-field cl-field--address">
+            <label className="cl-lbl">
+              <i className="fa-solid fa-location-dot" />
+              العنوان
+            </label>
+            <div className="cl-inp-wrap">
+              <i className="fa-solid fa-location-dot cl-ico" />
+              <input
+                className="cl-inp"
+                value={editData.address}
+                onChange={(e) => setEditData((p) => ({ ...p, address: e.target.value }))}
+                placeholder="اختياري"
+              />
+            </div>
+          </div>
+          <div className="cl-field cl-field--notes">
+            <label className="cl-lbl">
+              <i className="fa-regular fa-note-sticky" />
+              ملاحظات
+            </label>
+            <div className="cl-inp-wrap">
+              <i className="fa-regular fa-note-sticky cl-ico" />
+              <input
+                className="cl-inp"
+                value={editData.notes}
+                onChange={(e) => setEditData((p) => ({ ...p, notes: e.target.value }))}
+                placeholder="اختياري"
+              />
+            </div>
+          </div>
+          <div className="cl-field cl-field--submit cl-modal-actions">
+            <button type="submit" className="cl-btn cl-btn--save cl-modal-save">
+              <i className="fa-solid fa-check" />
+              حفظ التغييرات
+            </button>
+            <button type="button" className="cl-btn cl-btn--cancel" onClick={() => setEditId(null)}>
+              إلغاء
+            </button>
+          </div>
+        </form>
+      </Modal>
     </>
   );
 }

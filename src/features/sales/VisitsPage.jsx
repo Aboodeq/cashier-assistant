@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
+import Modal from "../../components/Modal";
 import "./VisitsPage.css";
 
 const OUTCOMES = [
@@ -331,145 +332,81 @@ export default function VisitsPage() {
                       <div className="vs-item-ico">
                         <i className={outcome.icon} style={{ fontSize: 16, color: outcome.color }} />
                       </div>
-                      {editId === v.id ? (
-                        <div className="vs-edit-grid">
-                          <select
-                            className="vs-edit-select"
-                            value={editData.clientId}
-                            onChange={(e) => setEditData((p) => ({ ...p, clientId: e.target.value }))}
+                      <div className="vs-item-info">
+                        <div className="vs-item-name-row">
+                          <span className="vs-item-name">{v.clientName}</span>
+                          <span
+                            className="vs-outcome"
+                            style={{ background: outcome.bg, color: outcome.color }}
                           >
-                            {clients.map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            className="vs-edit-input"
-                            type="date"
-                            value={editData.date}
-                            onChange={(e) => setEditData((p) => ({ ...p, date: e.target.value }))}
-                          />
-                          <select
-                            className="vs-edit-select"
-                            value={editData.outcome}
-                            onChange={(e) => setEditData((p) => ({ ...p, outcome: e.target.value }))}
+                            <i className={outcome.icon} style={{ fontSize: 9 }} />
+                            {outcome.label}
+                          </span>
+                        </div>
+                        <div className="vs-item-meta">
+                          <span className="vs-item-territory">
+                            <i className="fa-solid fa-map-location-dot" style={{ fontSize: 10 }} />
+                            {v.territoryName || "غير محدد"}
+                          </span>
+                          <span>
+                            <i className="fa-regular fa-calendar" style={{ fontSize: 10 }} />
+                            {v.date}
+                          </span>
+                        </div>
+                        {v.notes && <div className="vs-item-notes">{v.notes}</div>}
+                        {hasFollowUp && (
+                          <div
+                            className={`vs-followup ${
+                              v.followUpDone
+                                ? "vs-followup--done"
+                                : isDue
+                                  ? "vs-followup--due"
+                                  : "vs-followup--upcoming"
+                            }`}
                           >
-                            {OUTCOMES.map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            className="vs-edit-input"
-                            type="date"
-                            value={editData.followUpDate}
-                            onChange={(e) =>
-                              setEditData((p) => ({ ...p, followUpDate: e.target.value }))
-                            }
-                          />
-                          <input
-                            className="vs-edit-input vs-edit-full"
-                            value={editData.notes}
-                            onChange={(e) => setEditData((p) => ({ ...p, notes: e.target.value }))}
-                            placeholder="ملاحظات"
-                          />
-                        </div>
-                      ) : (
-                        <div className="vs-item-info">
-                          <div className="vs-item-name-row">
-                            <span className="vs-item-name">{v.clientName}</span>
-                            <span
-                              className="vs-outcome"
-                              style={{ background: outcome.bg, color: outcome.color }}
-                            >
-                              <i className={outcome.icon} style={{ fontSize: 9 }} />
-                              {outcome.label}
-                            </span>
+                            <i
+                              className={`fa-solid fa-${v.followUpDone ? "check" : "bell"}`}
+                              style={{ fontSize: 10 }}
+                            />
+                            {v.followUpDone
+                              ? `تمت المتابعة (${v.followUpDate})`
+                              : `متابعة ${isDue ? "مستحقة" : "قادمة"}: ${v.followUpDate}`}
+                            {!v.followUpDone && (
+                              <button className="vs-followup-btn" onClick={() => toggleFollowUpDone(v)}>
+                                تمّت
+                              </button>
+                            )}
                           </div>
-                          <div className="vs-item-meta">
-                            <span className="vs-item-territory">
-                              <i className="fa-solid fa-map-location-dot" style={{ fontSize: 10 }} />
-                              {v.territoryName || "غير محدد"}
-                            </span>
-                            <span>
-                              <i className="fa-regular fa-calendar" style={{ fontSize: 10 }} />
-                              {v.date}
-                            </span>
-                          </div>
-                          {v.notes && <div className="vs-item-notes">{v.notes}</div>}
-                          {hasFollowUp && (
-                            <div
-                              className={`vs-followup ${
-                                v.followUpDone
-                                  ? "vs-followup--done"
-                                  : isDue
-                                    ? "vs-followup--due"
-                                    : "vs-followup--upcoming"
-                              }`}
-                            >
-                              <i
-                                className={`fa-solid fa-${v.followUpDone ? "check" : "bell"}`}
-                                style={{ fontSize: 10 }}
-                              />
-                              {v.followUpDone
-                                ? `تمت المتابعة (${v.followUpDate})`
-                                : `متابعة ${isDue ? "مستحقة" : "قادمة"}: ${v.followUpDate}`}
-                              {!v.followUpDone && (
-                                <button
-                                  className="vs-followup-btn"
-                                  onClick={() => toggleFollowUpDone(v)}
-                                >
-                                  تمّت
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                     <div className="vs-item-actions">
-                      {editId === v.id ? (
-                        <>
-                          <button className="vs-btn vs-btn--save" onClick={() => handleEdit(v.id)}>
-                            <i className="fa-solid fa-check" />
-                            حفظ
-                          </button>
-                          <button className="vs-btn vs-btn--cancel" onClick={() => setEditId(null)}>
-                            <i className="fa-solid fa-xmark" />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            className="vs-btn vs-btn--edit"
-                            onClick={() => {
-                              setEditId(v.id);
-                              setEditData({
-                                clientId: v.clientId,
-                                date: v.date,
-                                outcome: v.outcome,
-                                followUpDate: v.followUpDate || "",
-                                notes: v.notes || "",
-                              });
-                            }}
-                          >
-                            <i className="fa-solid fa-pen" />
-                          </button>
-                          <button
-                            className="vs-btn vs-btn--del"
-                            onClick={() => setDeleteTarget(v)}
-                            disabled={deleting === v.id}
-                          >
-                            {deleting === v.id ? (
-                              <div className="vs-spinner vs-spinner--red" />
-                            ) : (
-                              <i className="fa-solid fa-trash" />
-                            )}
-                          </button>
-                        </>
-                      )}
+                      <button
+                        className="vs-btn vs-btn--edit"
+                        onClick={() => {
+                          setEditId(v.id);
+                          setEditData({
+                            clientId: v.clientId,
+                            date: v.date,
+                            outcome: v.outcome,
+                            followUpDate: v.followUpDate || "",
+                            notes: v.notes || "",
+                          });
+                        }}
+                      >
+                        <i className="fa-solid fa-pen" />
+                      </button>
+                      <button
+                        className="vs-btn vs-btn--del"
+                        onClick={() => setDeleteTarget(v)}
+                        disabled={deleting === v.id}
+                      >
+                        {deleting === v.id ? (
+                          <div className="vs-spinner vs-spinner--red" />
+                        ) : (
+                          <i className="fa-solid fa-trash" />
+                        )}
+                      </button>
                     </div>
                   </div>
                 );
@@ -487,6 +424,115 @@ export default function VisitsPage() {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
+      <Modal
+        open={Boolean(editId)}
+        onClose={() => setEditId(null)}
+        icon="fa-solid fa-route"
+        title="تعديل الزيارة"
+        subtitle={editId ? visits.find((v) => v.id === editId)?.clientName : ""}
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleEdit(editId);
+          }}
+          className="vs-add-grid"
+        >
+          <div className="vs-field">
+            <label className="vs-lbl">
+              <i className="fa-solid fa-address-book" />
+              العميل
+            </label>
+            <div className="vs-inp-wrap">
+              <i className="fa-solid fa-address-book vs-ico" />
+              <select
+                className="vs-inp"
+                value={editData.clientId}
+                onChange={(e) => setEditData((p) => ({ ...p, clientId: e.target.value }))}
+                required
+              >
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="vs-field">
+            <label className="vs-lbl">
+              <i className="fa-regular fa-calendar" />
+              التاريخ
+            </label>
+            <div className="vs-inp-wrap">
+              <input
+                className="vs-inp"
+                type="date"
+                value={editData.date}
+                onChange={(e) => setEditData((p) => ({ ...p, date: e.target.value }))}
+                required
+              />
+            </div>
+          </div>
+          <div className="vs-field">
+            <label className="vs-lbl">
+              <i className="fa-solid fa-clipboard-check" />
+              النتيجة
+            </label>
+            <div className="vs-inp-wrap">
+              <i className="fa-solid fa-clipboard-check vs-ico" />
+              <select
+                className="vs-inp"
+                value={editData.outcome}
+                onChange={(e) => setEditData((p) => ({ ...p, outcome: e.target.value }))}
+              >
+                {OUTCOMES.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="vs-field">
+            <label className="vs-lbl">
+              <i className="fa-solid fa-bell" />
+              متابعة بتاريخ
+            </label>
+            <div className="vs-inp-wrap">
+              <input
+                className="vs-inp"
+                type="date"
+                value={editData.followUpDate}
+                onChange={(e) => setEditData((p) => ({ ...p, followUpDate: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="vs-field vs-field--notes">
+            <label className="vs-lbl">
+              <i className="fa-regular fa-note-sticky" />
+              ملاحظات الزيارة
+            </label>
+            <div className="vs-inp-wrap">
+              <input
+                className="vs-inp"
+                value={editData.notes}
+                onChange={(e) => setEditData((p) => ({ ...p, notes: e.target.value }))}
+                placeholder="اختياري"
+              />
+            </div>
+          </div>
+          <div className="vs-field vs-field--submit vs-modal-actions">
+            <button type="submit" className="vs-btn vs-btn--save vs-modal-save">
+              <i className="fa-solid fa-check" />
+              حفظ التغييرات
+            </button>
+            <button type="button" className="vs-btn vs-btn--cancel" onClick={() => setEditId(null)}>
+              إلغاء
+            </button>
+          </div>
+        </form>
+      </Modal>
     </>
   );
 }

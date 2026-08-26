@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
+import Modal from "../../components/Modal";
 import { formatMoney, hasDirectPrice, priceIn, useExchangeRate } from "./currency";
 import "./ProductsPage.css";
 
@@ -125,7 +126,7 @@ export default function ProductsPage() {
               إضافة منتج جديد
             </div>
             <form onSubmit={handleAdd} className="pd-add-grid">
-              <div className="pd-field">
+              <div className="pd-field pd-field--name">
                 <label className="pd-lbl">
                   <i className="fa-solid fa-tag" />
                   اسم المنتج
@@ -212,6 +213,20 @@ export default function ProductsPage() {
                   />
                 </div>
               </div>
+              <div className="pd-field pd-field--notes">
+                <label className="pd-lbl">
+                  <i className="fa-regular fa-note-sticky" />
+                  ملاحظات
+                </label>
+                <div className="pd-inp-wrap">
+                  <input
+                    className="pd-inp"
+                    placeholder="اختياري"
+                    value={form.notes}
+                    onChange={setField("notes")}
+                  />
+                </div>
+              </div>
               <div className="pd-field pd-field--submit">
                 <label className="pd-lbl" style={{ opacity: 0 }}>
                   _
@@ -283,134 +298,70 @@ export default function ProductsPage() {
                       <div className="pd-item-ico">
                         <i className="fa-solid fa-box" style={{ fontSize: 16, color: "#0f766e" }} />
                       </div>
-                      {editId === p.id ? (
-                        <div className="pd-edit-grid">
-                          <input
-                            className="pd-edit-input"
-                            value={editData.name}
-                            onChange={(e) => setEditData((d) => ({ ...d, name: e.target.value }))}
-                            placeholder="اسم المنتج"
-                            autoFocus
-                          />
-                          <input
-                            className="pd-edit-input"
-                            value={editData.unit}
-                            onChange={(e) => setEditData((d) => ({ ...d, unit: e.target.value }))}
-                            placeholder="الوحدة"
-                          />
-                          <input
-                            className="pd-edit-input"
-                            type="number"
-                            value={editData.priceUSD}
-                            onChange={(e) => setEditData((d) => ({ ...d, priceUSD: e.target.value }))}
-                            placeholder="السعر ($)"
-                          />
-                          <input
-                            className="pd-edit-input"
-                            type="number"
-                            value={editData.priceSYP}
-                            onChange={(e) => setEditData((d) => ({ ...d, priceSYP: e.target.value }))}
-                            placeholder="السعر (ل.س)"
-                          />
-                          <input
-                            className="pd-edit-input"
-                            type="number"
-                            value={editData.lowStockThreshold}
-                            onChange={(e) =>
-                              setEditData((d) => ({ ...d, lowStockThreshold: e.target.value }))
-                            }
-                            placeholder="حد التنبيه"
-                          />
-                          <input
-                            className="pd-edit-input pd-edit-full"
-                            value={editData.notes}
-                            onChange={(e) => setEditData((d) => ({ ...d, notes: e.target.value }))}
-                            placeholder="ملاحظات"
-                          />
+                      <div className="pd-item-info">
+                        <div className="pd-item-name-row">
+                          <span className="pd-item-name">{p.name}</span>
+                          <span className={`pd-stock-badge ${low ? "pd-stock-badge--low" : ""}`}>
+                            <i
+                              className={`fa-solid fa-${low ? "triangle-exclamation" : "cube"}`}
+                              style={{ fontSize: 9 }}
+                            />
+                            {stock} {p.unit}
+                          </span>
                         </div>
-                      ) : (
-                        <div className="pd-item-info">
-                          <div className="pd-item-name-row">
-                            <span className="pd-item-name">{p.name}</span>
-                            <span className={`pd-stock-badge ${low ? "pd-stock-badge--low" : ""}`}>
-                              <i
-                                className={`fa-solid fa-${low ? "triangle-exclamation" : "cube"}`}
-                                style={{ fontSize: 9 }}
-                              />
-                              {stock} {p.unit}
-                            </span>
-                          </div>
-                          <div className="pd-item-meta">
-                            <span className="pd-item-price">
-                              <i className="fa-solid fa-dollar-sign" style={{ fontSize: 10 }} />
-                              {formatMoney(priceIn(p, "USD", rate), "USD")}
-                              {!hasDirectPrice(p, "USD") && rate > 0 && " (تقديري)"}
-                              {" "}/ {p.unit}
-                            </span>
-                            <span className="pd-item-price">
-                              <i className="fa-solid fa-money-bill" style={{ fontSize: 10 }} />
-                              {formatMoney(priceIn(p, "SYP", rate), "SYP")}
-                              {!hasDirectPrice(p, "SYP") && rate > 0 && " (تقديري)"}
-                              {" "}/ {p.unit}
-                            </span>
-                          </div>
-                          {p.notes && <div className="pd-item-notes">{p.notes}</div>}
+                        <div className="pd-item-meta">
+                          <span className="pd-item-price">
+                            <i className="fa-solid fa-dollar-sign" style={{ fontSize: 10 }} />
+                            {formatMoney(priceIn(p, "USD", rate), "USD")}
+                            {!hasDirectPrice(p, "USD") && rate > 0 && " (تقديري)"}
+                            {" "}/ {p.unit}
+                          </span>
+                          <span className="pd-item-price">
+                            <i className="fa-solid fa-money-bill" style={{ fontSize: 10 }} />
+                            {formatMoney(priceIn(p, "SYP", rate), "SYP")}
+                            {!hasDirectPrice(p, "SYP") && rate > 0 && " (تقديري)"}
+                            {" "}/ {p.unit}
+                          </span>
                         </div>
-                      )}
+                        {p.notes && <div className="pd-item-notes">{p.notes}</div>}
+                      </div>
                     </div>
                     <div className="pd-item-actions">
-                      {editId === p.id ? (
-                        <>
-                          <button className="pd-btn pd-btn--save" onClick={() => handleEdit(p.id)}>
-                            <i className="fa-solid fa-check" />
-                            حفظ
-                          </button>
-                          <button className="pd-btn pd-btn--cancel" onClick={() => setEditId(null)}>
-                            <i className="fa-solid fa-xmark" />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button className="pd-btn pd-btn--load" onClick={() => goStock(p.id, "load")}>
-                            <i className="fa-solid fa-arrow-down" />
-                            تحميل
-                          </button>
-                          <button
-                            className="pd-btn pd-btn--return"
-                            onClick={() => goStock(p.id, "return")}
-                          >
-                            <i className="fa-solid fa-arrow-up" />
-                            إرجاع
-                          </button>
-                          <button
-                            className="pd-btn pd-btn--edit"
-                            onClick={() => {
-                              setEditId(p.id);
-                              setEditData({
-                                name: p.name,
-                                unit: p.unit || "قطعة",
-                                priceUSD: p.priceUSD ?? "",
-                                priceSYP: p.priceSYP ?? "",
-                                lowStockThreshold: p.lowStockThreshold ?? "",
-                                notes: p.notes || "",
-                              });
-                            }}
-                          >
-                            <i className="fa-solid fa-pen" />
-                          </button>
-                          <button
-                            className="pd-btn pd-btn--del"
-                            onClick={() => setDeleteTarget(p)}
-                            disabled={deleting === p.id}
-                          >
-                            {deleting === p.id ? (
-                              <div className="pd-spinner pd-spinner--red" />
-                            ) : (
-                              <i className="fa-solid fa-trash" />
-                            )}
-                          </button>
-                        </>
-                      )}
+                      <button className="pd-btn pd-btn--load" onClick={() => goStock(p.id, "load")}>
+                        <i className="fa-solid fa-arrow-down" />
+                        تحميل
+                      </button>
+                      <button className="pd-btn pd-btn--return" onClick={() => goStock(p.id, "return")}>
+                        <i className="fa-solid fa-arrow-up" />
+                        إرجاع
+                      </button>
+                      <button
+                        className="pd-btn pd-btn--edit"
+                        onClick={() => {
+                          setEditId(p.id);
+                          setEditData({
+                            name: p.name,
+                            unit: p.unit || "قطعة",
+                            priceUSD: p.priceUSD ?? "",
+                            priceSYP: p.priceSYP ?? "",
+                            lowStockThreshold: p.lowStockThreshold ?? "",
+                            notes: p.notes || "",
+                          });
+                        }}
+                      >
+                        <i className="fa-solid fa-pen" />
+                      </button>
+                      <button
+                        className="pd-btn pd-btn--del"
+                        onClick={() => setDeleteTarget(p)}
+                        disabled={deleting === p.id}
+                      >
+                        {deleting === p.id ? (
+                          <div className="pd-spinner pd-spinner--red" />
+                        ) : (
+                          <i className="fa-solid fa-trash" />
+                        )}
+                      </button>
                     </div>
                   </div>
                 );
@@ -428,6 +379,135 @@ export default function ProductsPage() {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
+      <Modal
+        open={Boolean(editId)}
+        onClose={() => setEditId(null)}
+        icon="fa-solid fa-boxes-stacked"
+        title="تعديل المنتج"
+        subtitle={editId ? products.find((p) => p.id === editId)?.name : ""}
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleEdit(editId);
+          }}
+          className="pd-add-grid"
+        >
+          <div className="pd-field pd-field--name">
+            <label className="pd-lbl">
+              <i className="fa-solid fa-tag" />
+              اسم المنتج
+            </label>
+            <div className="pd-inp-wrap">
+              <input
+                className="pd-inp"
+                value={editData.name}
+                onChange={(e) => setEditData((d) => ({ ...d, name: e.target.value }))}
+                required
+                autoFocus
+              />
+            </div>
+          </div>
+          <div className="pd-field">
+            <label className="pd-lbl">
+              <i className="fa-solid fa-ruler" />
+              الوحدة
+            </label>
+            <div className="pd-inp-wrap">
+              <input
+                className="pd-inp"
+                value={editData.unit}
+                onChange={(e) => setEditData((d) => ({ ...d, unit: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="pd-field">
+            <label className="pd-lbl">
+              <i className="fa-solid fa-dollar-sign" />
+              السعر (دولار)
+            </label>
+            <div className="pd-inp-wrap">
+              <input
+                className="pd-inp"
+                type="number"
+                min="0"
+                step="any"
+                placeholder={
+                  editData.priceSYP && rate > 0
+                    ? `≈ ${(Number(editData.priceSYP) / rate).toLocaleString()}`
+                    : "0"
+                }
+                value={editData.priceUSD}
+                onChange={(e) => setEditData((d) => ({ ...d, priceUSD: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="pd-field">
+            <label className="pd-lbl">
+              <i className="fa-solid fa-money-bill" />
+              السعر (ل.س)
+            </label>
+            <div className="pd-inp-wrap">
+              <input
+                className="pd-inp"
+                type="number"
+                min="0"
+                step="any"
+                placeholder={
+                  editData.priceUSD && rate > 0
+                    ? `≈ ${(Number(editData.priceUSD) * rate).toLocaleString()}`
+                    : "0"
+                }
+                value={editData.priceSYP}
+                onChange={(e) => setEditData((d) => ({ ...d, priceSYP: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="pd-field">
+            <label className="pd-lbl">
+              <i className="fa-solid fa-triangle-exclamation" />
+              حد التنبيه
+            </label>
+            <div className="pd-inp-wrap">
+              <input
+                className="pd-inp"
+                type="number"
+                min="0"
+                placeholder="اختياري"
+                value={editData.lowStockThreshold}
+                onChange={(e) => setEditData((d) => ({ ...d, lowStockThreshold: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="pd-field pd-field--notes">
+            <label className="pd-lbl">
+              <i className="fa-regular fa-note-sticky" />
+              ملاحظات
+            </label>
+            <div className="pd-inp-wrap">
+              <input
+                className="pd-inp"
+                value={editData.notes}
+                onChange={(e) => setEditData((d) => ({ ...d, notes: e.target.value }))}
+                placeholder="اختياري"
+              />
+            </div>
+          </div>
+          <div className="pd-field pd-field--actions pd-modal-actions">
+            <button
+              type="submit"
+              className="pd-btn pd-btn--save pd-modal-save"
+              disabled={!editData.name.trim() || (!editData.priceUSD && !editData.priceSYP)}
+            >
+              <i className="fa-solid fa-check" />
+              حفظ التغييرات
+            </button>
+            <button type="button" className="pd-btn pd-btn--cancel" onClick={() => setEditId(null)}>
+              إلغاء
+            </button>
+          </div>
+        </form>
+      </Modal>
     </>
   );
 }

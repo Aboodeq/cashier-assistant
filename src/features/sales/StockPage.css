@@ -209,6 +209,17 @@
 .st-field--submit {
   grid-column: span 1;
 }
+.st-field--actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+.st-modal-save {
+  flex: 1;
+  justify-content: center;
+  min-height: 44px;
+}
 .st-lbl {
   display: flex;
   align-items: center;
@@ -436,36 +447,6 @@ select.st-inp {
   color: #94a3b8;
   margin-top: 4px;
 }
-.st-edit-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  flex: 1;
-  min-width: 260px;
-}
-.st-edit-grid .st-edit-full {
-  grid-column: span 2;
-}
-.st-edit-input,
-.st-edit-select {
-  width: 100%;
-  padding: 7px 12px;
-  border: 1.5px solid #0f766e;
-  border-radius: 9px;
-  font-size: 13px;
-  color: #1e293b;
-  background: #f0fdfa;
-  text-align: right;
-}
-.st-edit-select {
-  appearance: none;
-  cursor: pointer;
-}
-.st-edit-input:focus,
-.st-edit-select:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
-}
 .st-item-actions {
   display: flex;
   align-items: center;
@@ -562,10 +543,7 @@ select.st-inp {
   .st-field--submit {
     grid-column: span 1;
   }
-  .st-edit-grid {
-    grid-template-columns: 1fr;
-  }
-  .st-edit-grid .st-edit-full {
-    grid-column: span 1;
+  .st-field--actions {
+    flex-direction: column-reverse;
   }
 }

@@ -3,6 +3,7 @@ import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestor
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
+import Modal from "../../components/Modal";
 import "./TerritoriesPage.css";
 
 export default function TerritoriesPage() {
@@ -185,70 +186,33 @@ export default function TerritoriesPage() {
                         style={{ fontSize: 16, color: "#c2410c" }}
                       />
                     </div>
-                    {editId === t.id ? (
-                      <div style={{ display: "flex", gap: 8, flex: 1, flexWrap: "wrap" }}>
-                        <input
-                          className="tr-edit-input"
-                          value={editData.name}
-                          onChange={(e) => setEditData((p) => ({ ...p, name: e.target.value }))}
-                          onKeyDown={(e) => e.key === "Enter" && handleEdit(t.id)}
-                          placeholder="اسم المنطقة"
-                          autoFocus
-                        />
-                        <input
-                          className="tr-edit-input"
-                          value={editData.notes}
-                          onChange={(e) => setEditData((p) => ({ ...p, notes: e.target.value }))}
-                          onKeyDown={(e) => e.key === "Enter" && handleEdit(t.id)}
-                          placeholder="ملاحظات"
-                        />
-                      </div>
-                    ) : (
-                      <div className="tr-item-info">
-                        <div className="tr-item-name">{t.name}</div>
-                        {t.notes && <div className="tr-item-notes">{t.notes}</div>}
-                      </div>
-                    )}
+                    <div className="tr-item-info">
+                      <div className="tr-item-name">{t.name}</div>
+                      {t.notes && <div className="tr-item-notes">{t.notes}</div>}
+                    </div>
                   </div>
                   <div className="tr-item-actions">
-                    {editId === t.id ? (
-                      <>
-                        <button className="tr-btn tr-btn--save" onClick={() => handleEdit(t.id)}>
-                          <i className="fa-solid fa-check" />
-                          حفظ
-                        </button>
-                        <button
-                          className="tr-btn tr-btn--cancel"
-                          onClick={() => setEditId(null)}
-                        >
-                          <i className="fa-solid fa-xmark" />
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <span className="tr-item-count">{clientCount(t.id)} عميل</span>
-                        <button
-                          className="tr-btn tr-btn--edit"
-                          onClick={() => {
-                            setEditId(t.id);
-                            setEditData({ name: t.name, notes: t.notes || "" });
-                          }}
-                        >
-                          <i className="fa-solid fa-pen" />
-                        </button>
-                        <button
-                          className="tr-btn tr-btn--del"
-                          onClick={() => setDeleteTarget(t)}
-                          disabled={deleting === t.id}
-                        >
-                          {deleting === t.id ? (
-                            <div className="tr-spinner tr-spinner--red" />
-                          ) : (
-                            <i className="fa-solid fa-trash" />
-                          )}
-                        </button>
-                      </>
-                    )}
+                    <span className="tr-item-count">{clientCount(t.id)} عميل</span>
+                    <button
+                      className="tr-btn tr-btn--edit"
+                      onClick={() => {
+                        setEditId(t.id);
+                        setEditData({ name: t.name, notes: t.notes || "" });
+                      }}
+                    >
+                      <i className="fa-solid fa-pen" />
+                    </button>
+                    <button
+                      className="tr-btn tr-btn--del"
+                      onClick={() => setDeleteTarget(t)}
+                      disabled={deleting === t.id}
+                    >
+                      {deleting === t.id ? (
+                        <div className="tr-spinner tr-spinner--red" />
+                      ) : (
+                        <i className="fa-solid fa-trash" />
+                      )}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -265,6 +229,60 @@ export default function TerritoriesPage() {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
+      <Modal
+        open={Boolean(editId)}
+        onClose={() => setEditId(null)}
+        icon="fa-solid fa-map-location-dot"
+        title="تعديل المنطقة"
+        subtitle={editId ? territories.find((t) => t.id === editId)?.name : ""}
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleEdit(editId);
+          }}
+          className="tr-modal-form"
+        >
+          <div className="tr-field">
+            <label className="tr-modal-lbl">
+              <i className="fa-solid fa-map-location-dot" />
+              اسم المنطقة
+            </label>
+            <div className="tr-input-wrap">
+              <input
+                className="tr-input"
+                value={editData.name}
+                onChange={(e) => setEditData((p) => ({ ...p, name: e.target.value }))}
+                required
+                autoFocus
+              />
+            </div>
+          </div>
+          <div className="tr-field">
+            <label className="tr-modal-lbl">
+              <i className="fa-regular fa-note-sticky" />
+              ملاحظات
+            </label>
+            <div className="tr-input-wrap">
+              <input
+                className="tr-input"
+                value={editData.notes}
+                onChange={(e) => setEditData((p) => ({ ...p, notes: e.target.value }))}
+                placeholder="اختياري"
+              />
+            </div>
+          </div>
+          <div className="tr-modal-actions">
+            <button type="submit" className="tr-btn tr-btn--save">
+              <i className="fa-solid fa-check" />
+              حفظ التغييرات
+            </button>
+            <button type="button" className="tr-btn tr-btn--cancel" onClick={() => setEditId(null)}>
+              إلغاء
+            </button>
+          </div>
+        </form>
+      </Modal>
     </>
   );
 }

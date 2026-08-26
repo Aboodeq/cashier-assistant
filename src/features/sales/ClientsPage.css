@@ -512,38 +512,14 @@ select.cl-inp {
   margin-top: 4px;
   line-height: 1.5;
 }
-.cl-edit-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+.cl-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+.cl-modal-save {
   flex: 1;
-  min-width: 260px;
-}
-.cl-edit-grid > * {
-  grid-column: span 1;
-}
-.cl-edit-grid .cl-edit-full {
-  grid-column: span 2;
-}
-.cl-edit-input,
-.cl-edit-select {
-  width: 100%;
-  padding: 7px 12px;
-  border: 1.5px solid #7c3aed;
-  border-radius: 9px;
-  font-size: 13px;
-  color: #1e293b;
-  background: #f5f3ff;
-  text-align: right;
-}
-.cl-edit-select {
-  appearance: none;
-  cursor: pointer;
-}
-.cl-edit-input:focus,
-.cl-edit-select:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+  justify-content: center;
+  min-height: 44px;
 }
 .cl-item-actions {
   display: flex;
@@ -670,10 +646,7 @@ select.cl-inp {
   .cl-header-badge {
     display: none;
   }
-  .cl-edit-grid {
-    grid-template-columns: 1fr;
-  }
-  .cl-edit-grid .cl-edit-full {
-    grid-column: span 1;
+  .cl-modal-actions {
+    flex-direction: column-reverse;
   }
 }
