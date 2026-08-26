@@ -5,6 +5,7 @@ import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
 import Modal from "../../components/Modal";
+import { availableUnits, unitLabel } from "./packaging";
 import "./StockPage.css";
 
 const TYPE_META = {
@@ -16,7 +17,7 @@ const TYPE_META = {
 };
 
 const today = () => new Date().toISOString().split("T")[0];
-const emptyForm = { productId: "", type: "load", quantity: "", date: today(), notes: "" };
+const emptyForm = { productId: "", type: "load", quantity: "", unitLevel: "", date: today(), notes: "" };
 
 export default function StockPage() {
   const uid = auth.currentUser?.uid;
@@ -44,6 +45,10 @@ export default function StockPage() {
 
   const setField = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
 
+  const selectedProduct = products.find((p) => p.id === form.productId);
+  const selectedUnits = selectedProduct ? availableUnits(selectedProduct) : [];
+  const effectiveUnit = form.unitLevel || selectedUnits[0]?.value || "piece";
+
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.productId || !Number(form.quantity)) return;
@@ -52,7 +57,8 @@ export default function StockPage() {
     await addDoc(collection(db, "users", uid, "salesStockMoves"), {
       productId: form.productId,
       productName: product?.name || "",
-      unit: product?.unit || "",
+      unit: unitLabel(product, effectiveUnit),
+      unitLevel: effectiveUnit,
       type: form.type,
       quantity: Number(form.quantity),
       date: form.date,
@@ -74,13 +80,18 @@ export default function StockPage() {
     }
   };
 
+  const editProduct = products.find((p) => p.id === editData.productId);
+  const editUnits = editProduct ? availableUnits(editProduct) : [];
+  const editEffectiveUnit = editData.unitLevel || editUnits[0]?.value || "piece";
+
   const handleEdit = async (id) => {
     if (!editData.productId || !Number(editData.quantity)) return;
     const product = products.find((p) => p.id === editData.productId);
     await updateDoc(doc(db, "users", uid, "salesStockMoves", id), {
       productId: editData.productId,
       productName: product?.name || "",
-      unit: product?.unit || "",
+      unit: unitLabel(product, editEffectiveUnit),
+      unitLevel: editEffectiveUnit,
       type: editData.type,
       quantity: Number(editData.quantity),
       date: editData.date,
@@ -159,7 +170,7 @@ export default function StockPage() {
                       <select
                         className="st-inp"
                         value={form.productId}
-                        onChange={setField("productId")}
+                        onChange={(e) => setForm((p) => ({ ...p, productId: e.target.value, unitLevel: "" }))}
                         required
                       >
                         <option value="">اختر المنتج...</option>
@@ -171,6 +182,26 @@ export default function StockPage() {
                       </select>
                     </div>
                   </div>
+                  {selectedUnits.length > 1 && (
+                    <div className="st-field">
+                      <label className="st-lbl">
+                        <i className="fa-solid fa-layer-group" />
+                        الوحدة
+                      </label>
+                      <div className="st-unit-toggle">
+                        {selectedUnits.map((u) => (
+                          <button
+                            key={u.value}
+                            type="button"
+                            className={`st-unit-btn ${effectiveUnit === u.value ? "st-unit-btn--on" : ""}`}
+                            onClick={() => setForm((p) => ({ ...p, unitLevel: u.value }))}
+                          >
+                            {u.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="st-field">
                     <label className="st-lbl">
                       <i className="fa-solid fa-hashtag" />
@@ -352,6 +383,7 @@ export default function StockPage() {
                                 productId: m.productId,
                                 type: m.type,
                                 quantity: m.quantity,
+                                unitLevel: m.unitLevel || "",
                                 date: m.date,
                                 notes: m.notes || "",
                               });
@@ -430,7 +462,7 @@ export default function StockPage() {
                 <select
                   className="st-inp"
                   value={editData.productId}
-                  onChange={(e) => setEditData((p) => ({ ...p, productId: e.target.value }))}
+                  onChange={(e) => setEditData((p) => ({ ...p, productId: e.target.value, unitLevel: "" }))}
                   required
                 >
                   {products.map((p) => (
@@ -441,6 +473,26 @@ export default function StockPage() {
                 </select>
               </div>
             </div>
+            {editUnits.length > 1 && (
+              <div className="st-field">
+                <label className="st-lbl">
+                  <i className="fa-solid fa-layer-group" />
+                  الوحدة
+                </label>
+                <div className="st-unit-toggle">
+                  {editUnits.map((u) => (
+                    <button
+                      key={u.value}
+                      type="button"
+                      className={`st-unit-btn ${editEffectiveUnit === u.value ? "st-unit-btn--on" : ""}`}
+                      onClick={() => setEditData((p) => ({ ...p, unitLevel: u.value }))}
+                    >
+                      {u.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="st-field">
               <label className="st-lbl">
                 <i className="fa-solid fa-hashtag" />

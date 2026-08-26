@@ -6,11 +6,15 @@ import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
 import Modal from "../../components/Modal";
 import { formatMoney, hasDirectPrice, priceIn, useExchangeRate } from "./currency";
+import { baseUnitLabel, PACKAGE_TYPES, toBaseQty } from "./packaging";
 import "./ProductsPage.css";
 
 const emptyForm = {
   name: "",
   unit: "قطعة",
+  packageType: "piece",
+  boxesPerCarton: "",
+  itemsPerBox: "",
   priceUSD: "",
   priceSYP: "",
   lowStockThreshold: "",
@@ -36,10 +40,19 @@ export default function ProductsPage() {
 
   const setField = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
 
-  const stockOf = (productId) =>
-    moves
+  // Stock moves may have been recorded in any of a product's available units
+  // (carton/box/piece) — normalize each to the product's smallest available
+  // unit before summing so totals stay correct regardless of which unit a
+  // given load/return/sale was entered in.
+  const stockOf = (productId) => {
+    const product = products.find((p) => p.id === productId);
+    return moves
       .filter((m) => m.productId === productId)
-      .reduce((total, m) => total + (m.type === "load" ? m.quantity : -m.quantity), 0);
+      .reduce((total, m) => {
+        const qty = toBaseQty(product, m.unitLevel, m.quantity);
+        return total + (m.type === "load" ? qty : -qty);
+      }, 0);
+  };
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -49,6 +62,9 @@ export default function ProductsPage() {
     await addDoc(collection(db, "users", uid, "salesProducts"), {
       name,
       unit: form.unit.trim() || "قطعة",
+      packageType: form.packageType,
+      boxesPerCarton: form.packageType === "carton" && form.boxesPerCarton !== "" ? Number(form.boxesPerCarton) : null,
+      itemsPerBox: form.packageType !== "piece" && form.itemsPerBox !== "" ? Number(form.itemsPerBox) : null,
       priceUSD: form.priceUSD === "" ? null : Number(form.priceUSD),
       priceSYP: form.priceSYP === "" ? null : Number(form.priceSYP),
       lowStockThreshold: form.lowStockThreshold === "" ? null : Number(form.lowStockThreshold),
@@ -76,6 +92,13 @@ export default function ProductsPage() {
     await updateDoc(doc(db, "users", uid, "salesProducts", id), {
       name,
       unit: editData.unit.trim() || "قطعة",
+      packageType: editData.packageType,
+      boxesPerCarton:
+        editData.packageType === "carton" && editData.boxesPerCarton !== ""
+          ? Number(editData.boxesPerCarton)
+          : null,
+      itemsPerBox:
+        editData.packageType !== "piece" && editData.itemsPerBox !== "" ? Number(editData.itemsPerBox) : null,
       priceUSD: editData.priceUSD === "" ? null : Number(editData.priceUSD),
       priceSYP: editData.priceSYP === "" ? null : Number(editData.priceSYP),
       lowStockThreshold: editData.lowStockThreshold === "" ? null : Number(editData.lowStockThreshold),
@@ -86,6 +109,11 @@ export default function ProductsPage() {
 
   const goStock = (productId, type) =>
     navigate("/sales/products/stock", { state: { productId, type } });
+
+  // Price is always entered for the product's own package-type unit (e.g. per
+  // carton) — this just labels the price fields with that unit for clarity.
+  const packageUnitLabel = (packageType, unit) =>
+    packageType === "carton" ? "كرتون" : packageType === "box" ? "علبة" : unit.trim() || "قطعة";
 
   const filtered = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -141,15 +169,70 @@ export default function ProductsPage() {
                   />
                 </div>
               </div>
+              <div className="pd-field pd-field--package">
+                <label className="pd-lbl">
+                  <i className="fa-solid fa-layer-group" />
+                  طريقة التعبئة
+                </label>
+                <div className="pd-package-toggle">
+                  {PACKAGE_TYPES.map((t) => (
+                    <button
+                      key={t.value}
+                      type="button"
+                      className={`pd-package-btn ${form.packageType === t.value ? "pd-package-btn--on" : ""}`}
+                      onClick={() => setForm((p) => ({ ...p, packageType: t.value }))}
+                    >
+                      <i className={t.icon} />
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {form.packageType === "carton" && (
+                <div className="pd-field">
+                  <label className="pd-lbl">
+                    <i className="fa-solid fa-box" />
+                    عدد العلب داخل الكرتون
+                  </label>
+                  <div className="pd-inp-wrap">
+                    <input
+                      className="pd-inp"
+                      type="number"
+                      min="1"
+                      placeholder="اختياري"
+                      value={form.boxesPerCarton}
+                      onChange={setField("boxesPerCarton")}
+                    />
+                  </div>
+                </div>
+              )}
+              {form.packageType !== "piece" && (
+                <div className="pd-field">
+                  <label className="pd-lbl">
+                    <i className="fa-solid fa-cube" />
+                    عدد القطع داخل {form.packageType === "carton" ? "كل علبة" : "العلبة"}
+                  </label>
+                  <div className="pd-inp-wrap">
+                    <input
+                      className="pd-inp"
+                      type="number"
+                      min="1"
+                      placeholder="اختياري"
+                      value={form.itemsPerBox}
+                      onChange={setField("itemsPerBox")}
+                    />
+                  </div>
+                </div>
+              )}
               <div className="pd-field">
                 <label className="pd-lbl">
                   <i className="fa-solid fa-ruler" />
-                  الوحدة
+                  {form.packageType === "piece" ? "الوحدة" : "اسم القطعة الواحدة"}
                 </label>
                 <div className="pd-inp-wrap">
                   <input
                     className="pd-inp"
-                    placeholder="قطعة / كرتون..."
+                    placeholder="قطعة / كيلو..."
                     value={form.unit}
                     onChange={setField("unit")}
                   />
@@ -158,7 +241,7 @@ export default function ProductsPage() {
               <div className="pd-field">
                 <label className="pd-lbl">
                   <i className="fa-solid fa-dollar-sign" />
-                  السعر (دولار)
+                  السعر (دولار) / {packageUnitLabel(form.packageType, form.unit)}
                 </label>
                 <div className="pd-inp-wrap">
                   <input
@@ -179,7 +262,7 @@ export default function ProductsPage() {
               <div className="pd-field">
                 <label className="pd-lbl">
                   <i className="fa-solid fa-money-bill" />
-                  السعر (ل.س)
+                  السعر (ل.س) / {packageUnitLabel(form.packageType, form.unit)}
                 </label>
                 <div className="pd-inp-wrap">
                   <input
@@ -200,7 +283,7 @@ export default function ProductsPage() {
               <div className="pd-field">
                 <label className="pd-lbl">
                   <i className="fa-solid fa-triangle-exclamation" />
-                  حد التنبيه
+                  حد التنبيه (بالـ{baseUnitLabel(form)})
                 </label>
                 <div className="pd-inp-wrap">
                   <input
@@ -306,7 +389,7 @@ export default function ProductsPage() {
                               className={`fa-solid fa-${low ? "triangle-exclamation" : "cube"}`}
                               style={{ fontSize: 9 }}
                             />
-                            {stock} {p.unit}
+                            {stock} {baseUnitLabel(p)}
                           </span>
                         </div>
                         <div className="pd-item-meta">
@@ -314,15 +397,26 @@ export default function ProductsPage() {
                             <i className="fa-solid fa-dollar-sign" style={{ fontSize: 10 }} />
                             {formatMoney(priceIn(p, "USD", rate), "USD")}
                             {!hasDirectPrice(p, "USD") && rate > 0 && " (تقديري)"}
-                            {" "}/ {p.unit}
+                            {" "}/ {packageUnitLabel(p.packageType || "piece", p.unit || "")}
                           </span>
                           <span className="pd-item-price">
                             <i className="fa-solid fa-money-bill" style={{ fontSize: 10 }} />
                             {formatMoney(priceIn(p, "SYP", rate), "SYP")}
                             {!hasDirectPrice(p, "SYP") && rate > 0 && " (تقديري)"}
-                            {" "}/ {p.unit}
+                            {" "}/ {packageUnitLabel(p.packageType || "piece", p.unit || "")}
                           </span>
                         </div>
+                        {(p.packageType === "box" || p.packageType === "carton") && (
+                          <div className="pd-package-summary">
+                            <i className="fa-solid fa-layer-group" style={{ fontSize: 10 }} />
+                            {p.packageType === "carton" && p.boxesPerCarton
+                              ? `الكرتون = ${p.boxesPerCarton} علبة`
+                              : null}
+                            {p.packageType === "carton" && p.boxesPerCarton && p.itemsPerBox ? " = " : null}
+                            {p.itemsPerBox ? `${p.itemsPerBox} ${p.unit || "قطعة"} / علبة` : null}
+                            {!p.itemsPerBox && !(p.packageType === "carton" && p.boxesPerCarton) && "لم تُحدَّد تفاصيل التعبئة"}
+                          </div>
+                        )}
                         {p.notes && <div className="pd-item-notes">{p.notes}</div>}
                       </div>
                     </div>
@@ -342,6 +436,9 @@ export default function ProductsPage() {
                           setEditData({
                             name: p.name,
                             unit: p.unit || "قطعة",
+                            packageType: p.packageType || "piece",
+                            boxesPerCarton: p.boxesPerCarton ?? "",
+                            itemsPerBox: p.itemsPerBox ?? "",
                             priceUSD: p.priceUSD ?? "",
                             priceSYP: p.priceSYP ?? "",
                             lowStockThreshold: p.lowStockThreshold ?? "",
@@ -408,10 +505,65 @@ export default function ProductsPage() {
               />
             </div>
           </div>
+          <div className="pd-field pd-field--package">
+            <label className="pd-lbl">
+              <i className="fa-solid fa-layer-group" />
+              طريقة التعبئة
+            </label>
+            <div className="pd-package-toggle">
+              {PACKAGE_TYPES.map((t) => (
+                <button
+                  key={t.value}
+                  type="button"
+                  className={`pd-package-btn ${editData.packageType === t.value ? "pd-package-btn--on" : ""}`}
+                  onClick={() => setEditData((d) => ({ ...d, packageType: t.value }))}
+                >
+                  <i className={t.icon} />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {editData.packageType === "carton" && (
+            <div className="pd-field">
+              <label className="pd-lbl">
+                <i className="fa-solid fa-box" />
+                عدد العلب داخل الكرتون
+              </label>
+              <div className="pd-inp-wrap">
+                <input
+                  className="pd-inp"
+                  type="number"
+                  min="1"
+                  placeholder="اختياري"
+                  value={editData.boxesPerCarton}
+                  onChange={(e) => setEditData((d) => ({ ...d, boxesPerCarton: e.target.value }))}
+                />
+              </div>
+            </div>
+          )}
+          {editData.packageType !== "piece" && (
+            <div className="pd-field">
+              <label className="pd-lbl">
+                <i className="fa-solid fa-cube" />
+                عدد القطع داخل {editData.packageType === "carton" ? "كل علبة" : "العلبة"}
+              </label>
+              <div className="pd-inp-wrap">
+                <input
+                  className="pd-inp"
+                  type="number"
+                  min="1"
+                  placeholder="اختياري"
+                  value={editData.itemsPerBox}
+                  onChange={(e) => setEditData((d) => ({ ...d, itemsPerBox: e.target.value }))}
+                />
+              </div>
+            </div>
+          )}
           <div className="pd-field">
             <label className="pd-lbl">
               <i className="fa-solid fa-ruler" />
-              الوحدة
+              {editData.packageType === "piece" ? "الوحدة" : "اسم القطعة الواحدة"}
             </label>
             <div className="pd-inp-wrap">
               <input
@@ -424,7 +576,7 @@ export default function ProductsPage() {
           <div className="pd-field">
             <label className="pd-lbl">
               <i className="fa-solid fa-dollar-sign" />
-              السعر (دولار)
+              السعر (دولار) / {packageUnitLabel(editData.packageType, editData.unit)}
             </label>
             <div className="pd-inp-wrap">
               <input
@@ -445,7 +597,7 @@ export default function ProductsPage() {
           <div className="pd-field">
             <label className="pd-lbl">
               <i className="fa-solid fa-money-bill" />
-              السعر (ل.س)
+              السعر (ل.س) / {packageUnitLabel(editData.packageType, editData.unit)}
             </label>
             <div className="pd-inp-wrap">
               <input
@@ -466,7 +618,7 @@ export default function ProductsPage() {
           <div className="pd-field">
             <label className="pd-lbl">
               <i className="fa-solid fa-triangle-exclamation" />
-              حد التنبيه
+              حد التنبيه (بالـ{baseUnitLabel(editData)})
             </label>
             <div className="pd-inp-wrap">
               <input

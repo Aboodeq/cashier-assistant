@@ -2,6 +2,7 @@ import { useState } from "react";
 import { auth } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import { formatDual } from "./currency";
+import { baseUnitLabel, toBaseQty } from "./packaging";
 import "./ReportsPage.css";
 
 const today = () => new Date().toISOString().split("T")[0];
@@ -31,6 +32,7 @@ export default function ReportsPage() {
   const orders = useFirestoreCollection(uid && ["users", uid, "salesOrders"]);
   const payments = useFirestoreCollection(uid && ["users", uid, "salesPayments"]);
   const expenses = useFirestoreCollection(uid && ["users", uid, "salesExpenses"]);
+  const products = useFirestoreCollection(uid && ["users", uid, "salesProducts"]);
 
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -90,17 +92,22 @@ export default function ReportsPage() {
     .sort((a, b) => rankKey(b.usd, b.syp) - rankKey(a.usd, a.syp))
     .slice(0, 5);
 
+  // Line items for the same product may each be in a different unit (carton/
+  // box/piece), so quantities are normalized to the product's smallest
+  // available unit before summing/ranking — otherwise "5 cartons + 3 pieces"
+  // would nonsensically sum to "8".
   const productMap = new Map();
   for (const o of rangedOrders) {
     for (const item of o.items || []) {
+      const product = products.find((p) => p.id === item.productId);
       const cur = productMap.get(item.productId) || {
         name: item.productName,
-        unit: item.unit,
+        unit: baseUnitLabel(product),
         qty: 0,
         usd: 0,
         syp: 0,
       };
-      cur.qty += item.quantity;
+      cur.qty += toBaseQty(product, item.unitLevel, item.quantity);
       if (item.currency === "USD") cur.usd += item.lineTotal;
       else cur.syp += item.lineTotal;
       productMap.set(item.productId, cur);

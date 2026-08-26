@@ -9,11 +9,12 @@ import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
 import Modal from "../../components/Modal";
 import { formatDual, priceIn, useExchangeRate } from "./currency";
 import InvoiceTemplate, { INVOICE_PRINT_STYLES } from "./InvoiceTemplate";
+import { availableUnits, baseUnitLabel, priceForUnit, toBaseQty, unitLabel } from "./packaging";
 import "./SalesOrdersPage.css";
 
 const today = () => new Date().toISOString().split("T")[0];
 
-const emptyLine = { productId: "", currency: "USD", quantity: "", price: "" };
+const emptyLine = { productId: "", currency: "USD", quantity: "", price: "", unitLevel: "" };
 const emptyOrderForm = { clientId: "", paymentType: "cash", visitId: "", date: today(), notes: "" };
 
 export default function SalesOrdersPage() {
@@ -55,12 +56,24 @@ export default function SalesOrdersPage() {
 
   // excludeOrderId lets the edit modal see stock as if this order's own moves
   // don't exist yet, so re-saving the same quantities never falsely warns.
-  const stockOf = (productId, excludeOrderId) =>
-    moves
+  // Moves/cart lines may each be recorded in a different unit (carton/box/
+  // piece) for the same product, so everything is normalized to that
+  // product's smallest available unit before summing.
+  const stockOf = (productId, excludeOrderId) => {
+    const product = products.find((p) => p.id === productId);
+    return moves
       .filter((m) => m.productId === productId && (!excludeOrderId || m.orderId !== excludeOrderId))
-      .reduce((t, m) => t + (m.type === "load" ? m.quantity : -m.quantity), 0);
-  const cartQtyOf = (cartList, productId) =>
-    cartList.filter((i) => i.productId === productId).reduce((s, i) => s + i.quantity, 0);
+      .reduce((t, m) => {
+        const qty = toBaseQty(product, m.unitLevel, m.quantity);
+        return t + (m.type === "load" ? qty : -qty);
+      }, 0);
+  };
+  const cartQtyOf = (cartList, productId) => {
+    const product = products.find((p) => p.id === productId);
+    return cartList
+      .filter((i) => i.productId === productId)
+      .reduce((s, i) => s + toBaseQty(product, i.unitLevel, i.quantity), 0);
+  };
   const availableOf = (productId, cartList, excludeOrderId) =>
     stockOf(productId, excludeOrderId) - cartQtyOf(cartList, productId);
 
@@ -74,32 +87,48 @@ export default function SalesOrdersPage() {
       { usd: 0, syp: 0 },
     );
 
-  // Shared logic for the "pick a product/qty/price and add it to the cart"
-  // builder — used by both the new-order form and the edit modal, each with
-  // its own line/cart state so they never interfere with one another.
+  // Shared logic for the "pick a product/qty/unit/price and add it to the
+  // cart" builder — used by both the new-order form and the edit modal, each
+  // with its own line/cart state so they never interfere with one another.
   const buildLineHelpers = (lineState, setLineState, cartList, setCartList, excludeOrderId) => {
+    const lineProduct = products.find((p) => p.id === lineState.productId);
+    const lineUnits = lineProduct ? availableUnits(lineProduct) : [];
+    const effectiveUnit = lineState.unitLevel || lineUnits[0]?.value || "piece";
+
+    const priceAtUnit = (product, currency, unit) =>
+      product ? priceForUnit(product, unit, priceIn(product, currency, rate)) || "" : "";
+
     const setLineField = (field) => (e) => setLineState((p) => ({ ...p, [field]: e.target.value }));
     const onLineProductChange = (e) => {
       const product = products.find((p) => p.id === e.target.value);
+      const units = product ? availableUnits(product) : [];
+      const unit = units[0]?.value || "piece";
       setLineState((p) => ({
         ...p,
         productId: e.target.value,
-        price: product ? priceIn(product, p.currency, rate) || "" : "",
+        unitLevel: "",
+        price: priceAtUnit(product, p.currency, unit),
       }));
     };
     const setLineCurrency = (currency) => {
-      const product = products.find((p) => p.id === lineState.productId);
       setLineState((p) => ({
         ...p,
         currency,
-        price: product ? priceIn(product, currency, rate) || "" : "",
+        price: priceAtUnit(lineProduct, currency, effectiveUnit),
+      }));
+    };
+    const setLineUnit = (unit) => {
+      setLineState((p) => ({
+        ...p,
+        unitLevel: unit,
+        price: priceAtUnit(lineProduct, p.currency, unit),
       }));
     };
     const availableOfLine = (productId) => availableOf(productId, cartList, excludeOrderId);
     const lineTotal = (Number(lineState.quantity) || 0) * (Number(lineState.price) || 0);
-    const lineProduct = products.find((p) => p.id === lineState.productId);
     const lineOverStock =
-      lineProduct != null && Number(lineState.quantity) > availableOfLine(lineState.productId);
+      lineProduct != null &&
+      toBaseQty(lineProduct, effectiveUnit, lineState.quantity) > availableOfLine(lineState.productId);
     const addLineToCart = () => {
       if (!lineState.productId || !Number(lineState.quantity) || !Number(lineState.price)) return;
       const product = products.find((p) => p.id === lineState.productId);
@@ -108,7 +137,8 @@ export default function SalesOrdersPage() {
         {
           productId: lineState.productId,
           productName: product?.name || "",
-          unit: product?.unit || "",
+          unit: unitLabel(product, effectiveUnit),
+          unitLevel: effectiveUnit,
           currency: lineState.currency,
           quantity: Number(lineState.quantity),
           price: Number(lineState.price),
@@ -122,7 +152,10 @@ export default function SalesOrdersPage() {
       setLineField,
       onLineProductChange,
       setLineCurrency,
+      setLineUnit,
       availableOfLine,
+      lineUnits,
+      effectiveUnit,
       lineTotal,
       lineProduct,
       lineOverStock,
@@ -173,6 +206,7 @@ export default function SalesOrdersPage() {
           productId: item.productId,
           productName: item.productName,
           unit: item.unit,
+          unitLevel: item.unitLevel || "piece",
           type: "sale",
           quantity: item.quantity,
           date: orderForm.date,
@@ -258,6 +292,7 @@ export default function SalesOrdersPage() {
           productId: item.productId,
           productName: item.productName,
           unit: item.unit,
+          unitLevel: item.unitLevel || "piece",
           type: "sale",
           quantity: item.quantity,
           date: editOrderForm.date,
@@ -375,6 +410,20 @@ export default function SalesOrdersPage() {
                     ليرة سورية
                   </button>
                 </div>
+                {lineHelpers.lineUnits.length > 1 && (
+                  <div className="so-currency-toggle" style={{ marginBottom: 10 }}>
+                    {lineHelpers.lineUnits.map((u) => (
+                      <button
+                        key={u.value}
+                        type="button"
+                        className={`so-currency-btn ${lineHelpers.effectiveUnit === u.value ? "so-currency-btn--on" : ""}`}
+                        onClick={() => lineHelpers.setLineUnit(u.value)}
+                      >
+                        {u.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="so-line-grid">
                   <div className="so-field">
                     <label className="so-lbl">
@@ -386,7 +435,7 @@ export default function SalesOrdersPage() {
                         <option value="">اختر المنتج...</option>
                         {products.map((p) => (
                           <option key={p.id} value={p.id}>
-                            {p.name} (متوفر: {lineHelpers.availableOfLine(p.id)})
+                            {p.name} (متوفر: {lineHelpers.availableOfLine(p.id)} {baseUnitLabel(p)})
                           </option>
                         ))}
                       </select>
@@ -411,7 +460,7 @@ export default function SalesOrdersPage() {
                   <div className="so-field">
                     <label className="so-lbl">
                       <i className="fa-solid fa-sack-dollar" />
-                      سعر الوحدة
+                      سعر الـ{unitLabel(lineHelpers.lineProduct, lineHelpers.effectiveUnit)}
                     </label>
                     <div className="so-inp-wrap">
                       <input
@@ -441,7 +490,7 @@ export default function SalesOrdersPage() {
                 {lineHelpers.lineOverStock && (
                   <div className="so-warn" style={{ marginTop: 10 }}>
                     <i className="fa-solid fa-triangle-exclamation" style={{ color: "#f59e0b" }} />
-                    الكمية أكبر من المتوفر ({lineHelpers.availableOfLine(line.productId)}) — يمكنك المتابعة رغم ذلك
+                    الكمية أكبر من المتوفر ({lineHelpers.availableOfLine(line.productId)} {baseUnitLabel(lineHelpers.lineProduct)}) — يمكنك المتابعة رغم ذلك
                   </div>
                 )}
 
@@ -829,6 +878,20 @@ export default function SalesOrdersPage() {
             ليرة سورية
           </button>
         </div>
+        {editLineHelpers.lineUnits.length > 1 && (
+          <div className="so-currency-toggle" style={{ marginBottom: 10 }}>
+            {editLineHelpers.lineUnits.map((u) => (
+              <button
+                key={u.value}
+                type="button"
+                className={`so-currency-btn ${editLineHelpers.effectiveUnit === u.value ? "so-currency-btn--on" : ""}`}
+                onClick={() => editLineHelpers.setLineUnit(u.value)}
+              >
+                {u.label}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="so-line-grid">
           <div className="so-field">
             <label className="so-lbl">
@@ -844,7 +907,7 @@ export default function SalesOrdersPage() {
                 <option value="">اختر المنتج...</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} (متوفر: {editLineHelpers.availableOfLine(p.id)})
+                    {p.name} (متوفر: {editLineHelpers.availableOfLine(p.id)} {baseUnitLabel(p)})
                   </option>
                 ))}
               </select>
@@ -869,7 +932,7 @@ export default function SalesOrdersPage() {
           <div className="so-field">
             <label className="so-lbl">
               <i className="fa-solid fa-sack-dollar" />
-              سعر الوحدة
+              سعر الـ{unitLabel(editLineHelpers.lineProduct, editLineHelpers.effectiveUnit)}
             </label>
             <div className="so-inp-wrap">
               <input
@@ -899,7 +962,7 @@ export default function SalesOrdersPage() {
         {editLineHelpers.lineOverStock && (
           <div className="so-warn" style={{ marginTop: 10 }}>
             <i className="fa-solid fa-triangle-exclamation" style={{ color: "#f59e0b" }} />
-            الكمية أكبر من المتوفر ({editLineHelpers.availableOfLine(editLine.productId)}) — يمكنك المتابعة رغم ذلك
+            الكمية أكبر من المتوفر ({editLineHelpers.availableOfLine(editLine.productId)} {baseUnitLabel(editLineHelpers.lineProduct)}) — يمكنك المتابعة رغم ذلك
           </div>
         )}
 

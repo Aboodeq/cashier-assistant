@@ -2,6 +2,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import { formatDual } from "./currency";
+import { baseUnitLabel, toBaseQty } from "./packaging";
 import "./SalesHome.css";
 
 const SECTIONS = [
@@ -120,10 +121,15 @@ export default function SalesHome({ nav }) {
     .sort((a, b) => (a.followUpDate > b.followUpDate ? 1 : -1))
     .slice(0, 6);
 
-  const stockOf = (productId) =>
-    moves
+  const stockOf = (productId) => {
+    const product = products.find((p) => p.id === productId);
+    return moves
       .filter((m) => m.productId === productId)
-      .reduce((t, m) => t + (m.type === "load" ? m.quantity : -m.quantity), 0);
+      .reduce((t, m) => {
+        const qty = toBaseQty(product, m.unitLevel, m.quantity);
+        return t + (m.type === "load" ? qty : -qty);
+      }, 0);
+  };
   const lowStock = products
     .filter((p) => p.lowStockThreshold != null && stockOf(p.id) <= p.lowStockThreshold)
     .slice(0, 6);
@@ -293,7 +299,7 @@ export default function SalesHome({ nav }) {
                   <span className="shs-followup-name">{p.name}</span>
                   <span className="shs-followup-date">
                     <i className="fa-solid fa-cube" style={{ fontSize: 10 }} />
-                    المتبقي: {stockOf(p.id)} {p.unit}
+                    المتبقي: {stockOf(p.id)} {baseUnitLabel(p)}
                   </span>
                 </div>
                 <button
