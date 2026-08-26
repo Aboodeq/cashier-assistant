@@ -5,6 +5,7 @@ import { auth } from "./firebase/config";
 import Login from "./features/auth/Login";
 import Register from "./features/auth/Register";
 import DashboardShell from "./features/dashboard/DashboardShell";
+import SalesShell from "./features/sales/SalesShell";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -54,6 +55,7 @@ function App() {
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
         <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
         <Route path="/dashboard/*" element={user ? <DashboardShell /> : <Navigate to="/login" />} />
+        <Route path="/sales/*" element={user ? <SalesShell /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
       </Routes>
     </BrowserRouter>
