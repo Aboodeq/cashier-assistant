@@ -1,4 +1,5 @@
-import { auth } from "../../firebase/config";
+import { doc, updateDoc } from "firebase/firestore";
+import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import "./SalesHome.css";
 
@@ -19,10 +20,17 @@ const SECTIONS = [
     bg: "#f5f3ff",
     color: "#7c3aed",
   },
+  {
+    to: "/sales/visits",
+    icon: "fa-solid fa-route",
+    label: "الزيارات",
+    desc: "سجّل زياراتك الميدانية ونتائجها ومتابعاتك",
+    bg: "#f0f9ff",
+    color: "#0369a1",
+  },
 ];
 
 const ROADMAP = [
-  { icon: "fa-solid fa-route", label: "زيارات ميدانية" },
   { icon: "fa-solid fa-boxes-stacked", label: "البضاعة والمخزون" },
   { icon: "fa-solid fa-file-invoice-dollar", label: "الطلبات والفواتير" },
   { icon: "fa-solid fa-car", label: "السيارة والمصاريف" },
@@ -30,11 +38,24 @@ const ROADMAP = [
   { icon: "fa-solid fa-chart-line", label: "التقارير" },
 ];
 
+const today = () => new Date().toISOString().split("T")[0];
+
 export default function SalesHome({ nav }) {
   const uid = auth.currentUser?.uid;
   const territories = useFirestoreCollection(uid && ["users", uid, "salesTerritories"]);
   const clients = useFirestoreCollection(uid && ["users", uid, "salesClients"]);
+  const visits = useFirestoreCollection(uid && ["users", uid, "salesVisits"]);
   const name = auth.currentUser?.email?.split("@")[0] || "مندوب المبيعات";
+
+  const visitsToday = visits.filter((v) => v.date === today()).length;
+  const followUps = visits
+    .filter((v) => v.followUpDate && !v.followUpDone)
+    .sort((a, b) => (a.followUpDate > b.followUpDate ? 1 : -1))
+    .slice(0, 6);
+
+  const markFollowUpDone = async (visitId) => {
+    await updateDoc(doc(db, "users", uid, "salesVisits", visitId), { followUpDone: true });
+  };
 
   return (
     <div className="shs-root">
@@ -80,6 +101,10 @@ export default function SalesHome({ nav }) {
               <div className="shs-stat-val">{clients.length}</div>
               <div className="shs-stat-lbl">عميل مسجّل</div>
             </div>
+            <div className="shs-stat-card">
+              <div className="shs-stat-val">{visitsToday}</div>
+              <div className="shs-stat-lbl">زيارة اليوم</div>
+            </div>
           </div>
         </div>
       </div>
@@ -102,6 +127,47 @@ export default function SalesHome({ nav }) {
           </div>
         ))}
       </div>
+
+      {/* ── Follow-ups ── */}
+      {followUps.length > 0 && (
+        <div className="shs-followups">
+          <div className="shs-roadmap-head">
+            <div className="shs-roadmap-ico" style={{ background: "#fef2f2" }}>
+              <i className="fa-solid fa-bell" style={{ fontSize: 15, color: "#dc2626" }} />
+            </div>
+            <div className="shs-roadmap-title">متابعات مستحقة</div>
+          </div>
+          <p className="shs-roadmap-sub">عملاء بحاجة لمتابعة بحسب آخر زياراتك</p>
+          <div className="shs-followup-list">
+            {followUps.map((v) => {
+              const due = v.followUpDate <= today();
+              return (
+                <div key={v.id} className={`shs-followup-row ${due ? "shs-followup-row--due" : ""}`}>
+                  <div className="shs-followup-info">
+                    <span className="shs-followup-name">{v.clientName}</span>
+                    <span className="shs-followup-date">
+                      <i className="fa-regular fa-calendar" style={{ fontSize: 10 }} />
+                      {v.followUpDate} {due ? "(مستحقة)" : ""}
+                    </span>
+                  </div>
+                  <div className="shs-followup-actions">
+                    <button
+                      className="shs-followup-visit"
+                      onClick={() => nav("/sales/visits", { state: { clientId: v.clientId } })}
+                    >
+                      <i className="fa-solid fa-route" />
+                      زيارة
+                    </button>
+                    <button className="shs-followup-done" onClick={() => markFollowUpDone(v.id)}>
+                      <i className="fa-solid fa-check" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Roadmap ── */}
       <div className="shs-roadmap">

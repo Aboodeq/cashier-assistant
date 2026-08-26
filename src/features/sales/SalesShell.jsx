@@ -3,6 +3,7 @@ import AppShell from "../../components/layout/AppShell";
 import ClientsPage from "./ClientsPage";
 import SalesHome from "./SalesHome";
 import TerritoriesPage from "./TerritoriesPage";
+import VisitsPage from "./VisitsPage";
 import { NAV } from "./nav";
 
 export default function SalesShell() {
@@ -14,6 +15,7 @@ export default function SalesShell() {
         <Route index element={<SalesHome nav={navigate} />} />
         <Route path="territories" element={<TerritoriesPage />} />
         <Route path="clients" element={<ClientsPage />} />
+        <Route path="visits" element={<VisitsPage />} />
       </Routes>
     </AppShell>
   );

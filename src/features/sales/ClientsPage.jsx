@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
@@ -17,12 +18,19 @@ const emptyForm = { name: "", phone: "", address: "", territoryId: "", category:
 
 export default function ClientsPage() {
   const uid = auth.currentUser?.uid;
+  const navigate = useNavigate();
   const clients = useFirestoreCollection(uid && ["users", uid, "salesClients"], {
     orderByField: "createdAt",
   });
   const territories = useFirestoreCollection(uid && ["users", uid, "salesTerritories"], {
     orderByField: "createdAt",
   });
+  const visits = useFirestoreCollection(uid && ["users", uid, "salesVisits"]);
+
+  const lastVisitDate = (clientId) =>
+    visits
+      .filter((v) => v.clientId === clientId)
+      .reduce((latest, v) => (!latest || v.date > latest ? v.date : latest), null);
 
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
@@ -410,6 +418,10 @@ export default function ClientsPage() {
                                 {c.address}
                               </span>
                             )}
+                            <span>
+                              <i className="fa-solid fa-route" style={{ fontSize: 10 }} />
+                              {lastVisitDate(c.id) ? `آخر زيارة: ${lastVisitDate(c.id)}` : "لا توجد زيارات بعد"}
+                            </span>
                           </div>
                           {c.notes && <div className="cl-item-notes">{c.notes}</div>}
                         </div>
@@ -428,6 +440,13 @@ export default function ClientsPage() {
                         </>
                       ) : (
                         <>
+                          <button
+                            className="cl-btn cl-btn--visit"
+                            onClick={() => navigate("/sales/visits", { state: { clientId: c.id } })}
+                          >
+                            <i className="fa-solid fa-route" />
+                            زيارة
+                          </button>
                           <button
                             className="cl-btn cl-btn--edit"
                             onClick={() => {
