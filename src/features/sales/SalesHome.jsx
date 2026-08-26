@@ -45,10 +45,17 @@ const SECTIONS = [
     bg: "#eef2ff",
     color: "#4338ca",
   },
+  {
+    to: "/sales/expenses",
+    icon: "fa-solid fa-car",
+    label: "السيارة والمصاريف",
+    desc: "سجّل مصاريف السيارة (وقود، صيانة، رسوم...) وتابع قراءة العداد",
+    bg: "#fffbeb",
+    color: "#92400e",
+  },
 ];
 
 const ROADMAP = [
-  { icon: "fa-solid fa-car", label: "السيارة والمصاريف" },
   { icon: "fa-solid fa-bullseye", label: "الأهداف والعمولات" },
   { icon: "fa-solid fa-chart-line", label: "التقارير" },
 ];
@@ -64,11 +71,20 @@ export default function SalesHome({ nav }) {
   const moves = useFirestoreCollection(uid && ["users", uid, "salesStockMoves"]);
   const orders = useFirestoreCollection(uid && ["users", uid, "salesOrders"]);
   const payments = useFirestoreCollection(uid && ["users", uid, "salesPayments"]);
+  const expenses = useFirestoreCollection(uid && ["users", uid, "salesExpenses"]);
   const name = auth.currentUser?.email?.split("@")[0] || "مندوب المبيعات";
 
   const todaysOrders = orders.filter((o) => o.date === today());
   const salesTodayUSD = todaysOrders.reduce((s, o) => s + (o.totalUSD || 0), 0);
   const salesTodaySYP = todaysOrders.reduce((s, o) => s + (o.totalSYP || 0), 0);
+
+  const thisMonthExpenses = expenses.filter((x) => x.date?.startsWith(today().slice(0, 7)));
+  const expensesMonthUSD = thisMonthExpenses
+    .filter((x) => x.currency === "USD")
+    .reduce((s, x) => s + x.amount, 0);
+  const expensesMonthSYP = thisMonthExpenses
+    .filter((x) => x.currency === "SYP")
+    .reduce((s, x) => s + x.amount, 0);
 
   const creditOrders = orders.filter((o) => o.paymentType === "credit");
   const owedUSD =
@@ -158,6 +174,14 @@ export default function SalesHome({ nav }) {
                   {formatDual(owedUSD, owedSYP)}
                 </div>
                 <div className="shs-stat-lbl">مستحق على العملاء</div>
+              </div>
+            )}
+            {(expensesMonthUSD > 0 || expensesMonthSYP > 0) && (
+              <div className="shs-stat-card">
+                <div className="shs-stat-val" style={{ fontSize: 18 }}>
+                  {formatDual(expensesMonthUSD, expensesMonthSYP)}
+                </div>
+                <div className="shs-stat-lbl">مصاريف السيارة هذا الشهر</div>
               </div>
             )}
           </div>
