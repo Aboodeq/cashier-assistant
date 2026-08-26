@@ -61,9 +61,15 @@ const SECTIONS = [
     bg: "#fdf2f8",
     color: "#9d174d",
   },
+  {
+    to: "/sales/reports",
+    icon: "fa-solid fa-chart-line",
+    label: "التقارير",
+    desc: "نظرة شاملة على أداء المبيعات والمصاريف والعملاء",
+    bg: "#eff6ff",
+    color: "#1d4ed8",
+  },
 ];
-
-const ROADMAP = [{ icon: "fa-solid fa-chart-line", label: "التقارير" }];
 
 const today = () => new Date().toISOString().split("T")[0];
 
@@ -302,30 +308,6 @@ export default function SalesHome({ nav }) {
           </div>
         </div>
       )}
-
-      {/* ── Roadmap ── */}
-      <div className="shs-roadmap">
-        <div className="shs-roadmap-head">
-          <div className="shs-roadmap-ico">
-            <i className="fa-solid fa-road" style={{ fontSize: 15, color: "#c2410c" }} />
-          </div>
-          <div className="shs-roadmap-title">قيد الإنشاء — الخطوات القادمة</div>
-        </div>
-        <p className="shs-roadmap-sub">نبني هذا القسم خطوة بخطوة؛ هذا ما هو قادم بعد المناطق والعملاء</p>
-        <div className="shs-roadmap-grid">
-          {ROADMAP.map((r) => (
-            <div key={r.label} className="shs-roadmap-item">
-              <div className="shs-roadmap-item-ico">
-                <i className={r.icon} />
-              </div>
-              <div>
-                <div className="shs-roadmap-item-label">{r.label}</div>
-                <div className="shs-roadmap-item-tag">قريباً</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

@@ -7,5 +7,6 @@ export const NAV = [
   { to: "/sales/orders", icon: "fa-solid fa-file-invoice-dollar", label: "المبيعات", end: false },
   { to: "/sales/expenses", icon: "fa-solid fa-car", label: "المصاريف", end: false },
   { to: "/sales/goals", icon: "fa-solid fa-bullseye", label: "الأهداف", end: false },
+  { to: "/sales/reports", icon: "fa-solid fa-chart-line", label: "التقارير", end: false },
   { to: "/sales/settings", icon: "fa-solid fa-money-bill-transfer", label: "الإعدادات", end: false },
 ];

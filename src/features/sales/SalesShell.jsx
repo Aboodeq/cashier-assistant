@@ -5,6 +5,7 @@ import ExpensesPage from "./ExpensesPage";
 import GoalsPage from "./GoalsPage";
 import PaymentsPage from "./PaymentsPage";
 import ProductsPage from "./ProductsPage";
+import ReportsPage from "./ReportsPage";
 import SalesHome from "./SalesHome";
 import SalesOrdersPage from "./SalesOrdersPage";
 import SettingsPage from "./SettingsPage";
@@ -29,6 +30,7 @@ export default function SalesShell() {
         <Route path="orders" element={<SalesOrdersPage />} />
         <Route path="expenses" element={<ExpensesPage />} />
         <Route path="goals" element={<GoalsPage />} />
+        <Route path="reports" element={<ReportsPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Routes>
     </AppShell>
