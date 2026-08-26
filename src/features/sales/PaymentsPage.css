@@ -1,4 +1,4 @@
-@keyframes clFadeUp {
+@keyframes pyFadeUp {
   from {
     opacity: 0;
     transform: translateY(16px);
@@ -8,7 +8,7 @@
     transform: translateY(0);
   }
 }
-@keyframes clItemIn {
+@keyframes pyItemIn {
   from {
     opacity: 0;
     transform: translateX(12px);
@@ -18,12 +18,12 @@
     transform: translateX(0);
   }
 }
-@keyframes clSpin {
+@keyframes pySpin {
   to {
     transform: rotate(360deg);
   }
 }
-@keyframes clGrad {
+@keyframes pyGrad {
   0%,
   100% {
     background-position: 0% 50%;
@@ -33,7 +33,7 @@
   }
 }
 
-.cl-root {
+.py-root {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -42,23 +42,23 @@
 }
 
 /* Header */
-.cl-header {
+.py-header {
   position: relative;
   overflow: hidden;
   flex-shrink: 0;
   padding: 28px 32px 24px;
-  background: linear-gradient(135deg, #4c1d95, #5b21b6, #7c3aed);
+  background: linear-gradient(135deg, #052e16, #14532d, #166534);
   background-size: 200% 200%;
-  animation: clGrad 10s ease infinite;
+  animation: pyGrad 10s ease infinite;
 }
-.cl-header-bg {
+.py-header-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #2e1065, #4c1d95, #6d28d9, #7c3aed);
+  background: linear-gradient(135deg, #022c22, #052e16, #14532d, #15803d);
   background-size: 300% 300%;
-  animation: clGrad 12s ease infinite;
+  animation: pyGrad 12s ease infinite;
 }
-.cl-header-body {
+.py-header-body {
   position: relative;
   z-index: 1;
   display: flex;
@@ -67,37 +67,12 @@
   gap: 16px;
   flex-wrap: wrap;
 }
-.cl-header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.cl-header-link {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 16px;
-  min-height: 38px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-.cl-header-link:hover {
-  background: rgba(255, 255, 255, 0.22);
-}
-.cl-header-left {
+.py-header-left {
   display: flex;
   align-items: center;
   gap: 16px;
 }
-.cl-header-ico {
+.py-header-ico {
   width: 52px;
   height: 52px;
   border-radius: 15px;
@@ -111,19 +86,38 @@
     0 4px 16px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
-.cl-header-title {
+.py-header-title {
   font-size: 22px;
   font-weight: 900;
   color: #fff;
   letter-spacing: -0.4px;
   margin-bottom: 3px;
 }
-.cl-header-sub {
+.py-header-sub {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.6);
   font-weight: 400;
 }
-.cl-header-badge {
+.py-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  min-height: 38px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.py-back-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.py-header-badge {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -138,7 +132,7 @@
 }
 
 /* Body */
-.cl-body {
+.py-body {
   flex: 1;
   overflow-y: auto;
   padding: 24px 28px;
@@ -147,16 +141,16 @@
   gap: 18px;
 }
 
-/* Add card */
-.cl-add-card {
+/* Balances */
+.py-balances {
   background: #fff;
   border-radius: 18px;
   padding: 22px 24px;
   border: 1px solid #f1f5f9;
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.05);
-  animation: clFadeUp 0.5s 0.05s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: pyFadeUp 0.5s 0.05s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.cl-add-title {
+.py-section-title {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -165,39 +159,94 @@
   color: #1e293b;
   margin-bottom: 16px;
 }
-.cl-no-territories {
+.py-balance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+.py-balance-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  border-radius: 13px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  gap: 10px;
+}
+.py-balance-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+.py-balance-territory {
+  font-size: 11px;
+  color: #94a3b8;
+}
+.py-balance-amount {
+  font-size: 16px;
+  font-weight: 900;
+  color: #dc2626;
+  white-space: nowrap;
+}
+.py-balance-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 11px;
+  min-height: 34px;
+  border-radius: 8px;
+  border: none;
+  background: #16a34a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.py-balance-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);
+}
+.py-no-balances {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 14px 16px;
   border-radius: 10px;
-  background: #fffbeb;
-  border: 1px solid #fef3c7;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
   font-size: 13px;
-  font-weight: 500;
-  color: #92400e;
+  font-weight: 600;
+  color: #166534;
 }
-.cl-add-grid {
+
+/* Add card */
+.py-add-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 22px 24px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.05);
+  animation: pyFadeUp 0.5s 0.08s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.py-add-grid {
   display: grid;
-  grid-template-columns: 1.3fr 1fr 1fr 1fr;
+  grid-template-columns: 1.3fr 0.8fr 0.8fr 1fr 0.8fr;
   gap: 10px;
   align-items: end;
 }
-.cl-field {
+.py-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-.cl-field--address {
-  grid-column: span 2;
-}
-.cl-field--notes {
-  grid-column: span 2;
-}
-.cl-field--submit {
+.py-field--submit {
   grid-column: span 1;
 }
-.cl-lbl {
+.py-lbl {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -207,34 +256,25 @@
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
-.cl-lbl i {
+.py-lbl i {
   font-size: 10px;
-  color: #a78bfa;
+  color: #4ade80;
 }
-.cl-inp-wrap {
+.py-inp-wrap {
   position: relative;
   border: 1.5px solid #e2e8f0;
   border-radius: 12px;
   background: #f8fafc;
   transition: all 0.22s;
 }
-.cl-inp-wrap:focus-within {
-  border-color: #7c3aed;
+.py-inp-wrap:focus-within {
+  border-color: #16a34a;
   background: #fff;
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.1);
 }
-.cl-ico {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  font-size: 13px;
-  pointer-events: none;
-}
-.cl-inp {
+.py-inp {
   width: 100%;
-  padding: 12px 38px 12px 14px;
+  padding: 12px 14px;
   border: none;
   background: transparent;
   font-size: 14px;
@@ -242,14 +282,14 @@
   text-align: right;
   border-radius: 12px;
 }
-.cl-inp:focus {
+.py-inp:focus {
   outline: none;
 }
-select.cl-inp {
+select.py-inp {
   appearance: none;
   cursor: pointer;
 }
-.cl-add-btn {
+.py-add-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -258,90 +298,35 @@ select.cl-inp {
   min-height: 44px;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #6d28d9, #7c3aed);
+  background: linear-gradient(135deg, #15803d, #16a34a);
   color: #fff;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
   width: 100%;
-  box-shadow: 0 4px 16px rgba(109, 40, 217, 0.35);
+  box-shadow: 0 4px 16px rgba(21, 128, 61, 0.35);
   transition: all 0.25s;
 }
-.cl-add-btn:hover:not(:disabled) {
+.py-add-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(109, 40, 217, 0.45);
+  box-shadow: 0 8px 24px rgba(21, 128, 61, 0.45);
 }
-.cl-add-btn:disabled {
+.py-add-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
 
 /* Filters */
-.cl-filters {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  animation: clFadeUp 0.5s 0.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+.py-filters {
+  animation: pyFadeUp 0.5s 0.1s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.cl-search-wrap {
-  flex: 2;
-  min-width: 180px;
+.py-filter-select-wrap {
   position: relative;
+  max-width: 260px;
 }
-.cl-search-ico {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  font-size: 14px;
-  pointer-events: none;
-}
-.cl-search {
-  width: 100%;
-  padding: 12px 42px 12px 40px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 12px;
-  background: #fff;
-  font-size: 14px;
-  color: #1e293b;
-  text-align: right;
-  transition: all 0.22s;
-}
-.cl-search:focus {
-  outline: none;
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
-}
-.cl-clear {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: #f1f5f9;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #94a3b8;
-  font-size: 12px;
-  transition: all 0.2s;
-}
-.cl-clear:hover {
-  background: #e2e8f0;
-}
-.cl-filter-select-wrap {
-  flex: 1;
-  min-width: 130px;
-  position: relative;
-}
-.cl-filter-ico {
+.py-filter-ico {
   position: absolute;
   right: 12px;
   top: 50%;
@@ -351,7 +336,7 @@ select.cl-inp {
   pointer-events: none;
   z-index: 1;
 }
-.cl-filter-select {
+.py-filter-select {
   width: 100%;
   padding: 12px 36px 12px 12px;
   border: 1.5px solid #e2e8f0;
@@ -364,137 +349,99 @@ select.cl-inp {
   cursor: pointer;
   transition: all 0.22s;
 }
-.cl-filter-select:focus {
+.py-filter-select:focus {
   outline: none;
-  border-color: #7c3aed;
+  border-color: #16a34a;
 }
 
 /* Empty */
-.cl-empty {
+.py-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 60px 24px;
   gap: 12px;
-  animation: clFadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: pyFadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.cl-empty-ico {
+.py-empty-ico {
   width: 80px;
   height: 80px;
   border-radius: 22px;
-  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 4px;
 }
-.cl-empty-title {
+.py-empty-title {
   font-size: 16px;
   font-weight: 800;
   color: #1e293b;
 }
-.cl-empty-sub {
+.py-empty-sub {
   font-size: 13px;
   color: #94a3b8;
 }
 
 /* List */
-.cl-list {
+.py-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.cl-item {
+.py-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   background: #fff;
   border-radius: 14px;
-  padding: 15px 18px;
+  padding: 14px 18px;
   border: 1px solid #f1f5f9;
+  border-right: 3px solid #16a34a;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: clItemIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: pyItemIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
   gap: 12px;
   flex-wrap: wrap;
 }
-.cl-item:hover {
-  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.1);
-  border-color: rgba(124, 58, 237, 0.2);
+.py-item:hover {
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.1);
 }
-.cl-item-left {
+.py-item-left {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   flex: 1;
   min-width: 220px;
 }
-.cl-item-ava {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+.py-item-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
   flex-shrink: 0;
-  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  background: #f0fdf4;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  font-weight: 800;
-  color: #fff;
-  margin-top: 2px;
 }
-.cl-item-info {
+.py-item-info {
   flex: 1;
   min-width: 0;
 }
-.cl-item-name-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 4px;
-}
-.cl-item-name {
+.py-item-name {
   font-size: 15px;
   font-weight: 700;
   color: #1e293b;
+  margin-bottom: 3px;
 }
-.cl-cat {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 9px;
-  border-radius: 99px;
-  font-size: 10px;
-  font-weight: 700;
-}
-.cl-cat--new {
-  background: #eff6ff;
-  color: #2563eb;
-}
-.cl-cat--regular {
-  background: #f0fdf4;
-  color: #059669;
-}
-.cl-cat--vip {
-  background: #fffbeb;
-  color: #b45309;
-}
-.cl-cat--inactive {
-  background: #f8fafc;
-  color: #94a3b8;
-}
-.cl-cat--debt {
-  background: #fef2f2;
-  color: #dc2626;
-}
-.cl-item-meta {
+.py-item-meta {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
 }
-.cl-item-meta span {
+.py-item-meta span {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -502,56 +449,52 @@ select.cl-inp {
   color: #94a3b8;
   font-weight: 500;
 }
-.cl-item-territory {
-  color: #7c3aed !important;
-  font-weight: 600 !important;
+.py-item-amount {
+  color: #16a34a !important;
+  font-weight: 700 !important;
 }
-.cl-item-notes {
+.py-item-notes {
   font-size: 12px;
   color: #94a3b8;
   margin-top: 4px;
-  line-height: 1.5;
 }
-.cl-edit-grid {
+.py-edit-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   flex: 1;
   min-width: 260px;
 }
-.cl-edit-grid > * {
-  grid-column: span 1;
-}
-.cl-edit-grid .cl-edit-full {
+.py-edit-grid .py-edit-full {
   grid-column: span 2;
 }
-.cl-edit-input,
-.cl-edit-select {
+.py-edit-input,
+.py-edit-select {
   width: 100%;
   padding: 7px 12px;
-  border: 1.5px solid #7c3aed;
+  border: 1.5px solid #16a34a;
   border-radius: 9px;
   font-size: 13px;
   color: #1e293b;
-  background: #f5f3ff;
+  background: #f0fdf4;
   text-align: right;
 }
-.cl-edit-select {
+.py-edit-select {
   appearance: none;
   cursor: pointer;
 }
-.cl-edit-input:focus,
-.cl-edit-select:focus {
+.py-edit-input:focus,
+.py-edit-select:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
 }
-.cl-item-actions {
+.py-item-actions {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
 }
-.cl-btn {
+.py-btn {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -564,116 +507,90 @@ select.cl-inp {
   cursor: pointer;
   transition: all 0.2s;
 }
-.cl-btn--sell {
-  background: #eef2ff;
-  color: #4338ca;
-}
-.cl-btn--sell:hover {
-  background: #e0e7ff;
-  transform: scale(1.05);
-}
-.cl-btn--collect {
+.py-btn--edit {
   background: #f0fdf4;
   color: #16a34a;
 }
-.cl-btn--collect:hover {
+.py-btn--edit:hover {
   background: #dcfce7;
   transform: scale(1.05);
 }
-.cl-btn--visit {
-  background: #f0f9ff;
-  color: #0369a1;
-}
-.cl-btn--visit:hover {
-  background: #e0f2fe;
-  transform: scale(1.05);
-}
-.cl-btn--edit {
-  background: #f5f3ff;
-  color: #7c3aed;
-}
-.cl-btn--edit:hover {
-  background: #ede9fe;
-  transform: scale(1.05);
-}
-.cl-btn--del {
+.py-btn--del {
   background: #fef2f2;
   color: #ef4444;
 }
-.cl-btn--del:hover:not(:disabled) {
+.py-btn--del:hover:not(:disabled) {
   background: #fee2e2;
   transform: scale(1.05);
 }
-.cl-btn--del:disabled {
+.py-btn--del:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
-.cl-btn--save {
-  background: linear-gradient(135deg, #6d28d9, #7c3aed);
+.py-btn--save {
+  background: linear-gradient(135deg, #15803d, #16a34a);
   color: #fff;
   padding: 9px 14px;
 }
-.cl-btn--save:hover {
+.py-btn--save:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);
+  box-shadow: 0 4px 12px rgba(21, 128, 61, 0.3);
 }
-.cl-btn--cancel {
+.py-btn--cancel {
   background: #f8fafc;
   color: #94a3b8;
   border: 1px solid #e2e8f0;
 }
-.cl-btn--cancel:hover {
+.py-btn--cancel:hover {
   background: #f1f5f9;
   color: #475569;
 }
 
 /* Spinners */
-.cl-spinner {
+.py-spinner {
   width: 16px;
   height: 16px;
   border: 2.5px solid rgba(255, 255, 255, 0.3);
   border-top-color: #fff;
   border-radius: 50%;
-  animation: clSpin 0.7s linear infinite;
+  animation: pySpin 0.7s linear infinite;
 }
-.cl-spinner--red {
+.py-spinner--red {
   border: 2px solid rgba(239, 68, 68, 0.2);
   border-top-color: #ef4444;
 }
 
 /* Responsive */
-@media (max-width: 760px) {
-  .cl-add-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .cl-field--address,
-  .cl-field--notes,
-  .cl-field--submit {
-    grid-column: span 2;
+@media (max-width: 900px) {
+  .py-add-grid {
+    grid-template-columns: 1fr 1fr 1fr;
   }
 }
-@media (max-width: 600px) {
-  .cl-body {
+@media (max-width: 640px) {
+  .py-body {
     padding: 16px 14px;
   }
-  .cl-header {
+  .py-header {
     padding: 22px 18px 18px;
   }
-  .cl-add-grid {
-    grid-template-columns: 1fr;
+  .py-add-grid {
+    grid-template-columns: 1fr 1fr;
   }
-  .cl-field--address,
-  .cl-field--notes,
-  .cl-field--submit {
-    grid-column: span 1;
-  }
-  .cl-header-badge {
+  .py-header-badge {
     display: none;
   }
-  .cl-edit-grid {
+  .py-edit-grid {
     grid-template-columns: 1fr;
   }
-  .cl-edit-grid .cl-edit-full {
+  .py-edit-grid .py-edit-full {
     grid-column: span 1;
+  }
+}
+@media (max-width: 420px) {
+  .py-add-grid {
+    grid-template-columns: 1fr;
+  }
+  .py-balance-card {
+    flex-wrap: wrap;
   }
 }

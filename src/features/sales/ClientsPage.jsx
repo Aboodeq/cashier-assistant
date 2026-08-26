@@ -26,11 +26,21 @@ export default function ClientsPage() {
     orderByField: "createdAt",
   });
   const visits = useFirestoreCollection(uid && ["users", uid, "salesVisits"]);
+  const orders = useFirestoreCollection(uid && ["users", uid, "salesOrders"]);
+  const payments = useFirestoreCollection(uid && ["users", uid, "salesPayments"]);
 
   const lastVisitDate = (clientId) =>
     visits
       .filter((v) => v.clientId === clientId)
       .reduce((latest, v) => (!latest || v.date > latest ? v.date : latest), null);
+
+  const balanceOf = (clientId) => {
+    const owed = orders
+      .filter((o) => o.clientId === clientId && o.paymentType === "credit")
+      .reduce((s, o) => s + o.total, 0);
+    const paid = payments.filter((p) => p.clientId === clientId).reduce((s, p) => s + p.amount, 0);
+    return owed - paid;
+  };
 
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
@@ -112,9 +122,15 @@ export default function ClientsPage() {
                 <p className="cl-header-sub">إدارة قائمة العملاء وربطهم بالمناطق</p>
               </div>
             </div>
-            <div className="cl-header-badge">
-              <i className="fa-solid fa-address-book" style={{ fontSize: 11 }} />
-              {clients.length} عميل
+            <div className="cl-header-right">
+              <button className="cl-header-link" onClick={() => navigate("/sales/clients/payments")}>
+                <i className="fa-solid fa-hand-holding-dollar" />
+                التحصيلات
+              </button>
+              <div className="cl-header-badge">
+                <i className="fa-solid fa-address-book" style={{ fontSize: 11 }} />
+                {clients.length} عميل
+              </div>
             </div>
           </div>
         </div>
@@ -400,6 +416,12 @@ export default function ClientsPage() {
                           <div className="cl-item-name-row">
                             <span className="cl-item-name">{c.name}</span>
                             <span className={`cl-cat ${cat.cls}`}>{cat.label}</span>
+                            {balanceOf(c.id) > 0 && (
+                              <span className="cl-cat cl-cat--debt">
+                                <i className="fa-solid fa-scale-balanced" style={{ fontSize: 9 }} />
+                                مستحق: {balanceOf(c.id).toLocaleString()}
+                              </span>
+                            )}
                           </div>
                           <div className="cl-item-meta">
                             <span className="cl-item-territory">
@@ -440,6 +462,24 @@ export default function ClientsPage() {
                         </>
                       ) : (
                         <>
+                          <button
+                            className="cl-btn cl-btn--sell"
+                            onClick={() => navigate("/sales/orders", { state: { clientId: c.id } })}
+                          >
+                            <i className="fa-solid fa-cart-shopping" />
+                            بيع
+                          </button>
+                          {balanceOf(c.id) > 0 && (
+                            <button
+                              className="cl-btn cl-btn--collect"
+                              onClick={() =>
+                                navigate("/sales/clients/payments", { state: { clientId: c.id } })
+                              }
+                            >
+                              <i className="fa-solid fa-hand-holding-dollar" />
+                              تحصيل
+                            </button>
+                          )}
                           <button
                             className="cl-btn cl-btn--visit"
                             onClick={() => navigate("/sales/visits", { state: { clientId: c.id } })}

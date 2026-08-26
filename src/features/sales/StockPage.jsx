@@ -9,6 +9,9 @@ import "./StockPage.css";
 const TYPE_META = {
   load: { label: "تحميل", icon: "fa-solid fa-arrow-down", color: "#059669", bg: "#f0fdf4" },
   return: { label: "إرجاع", icon: "fa-solid fa-arrow-up", color: "#c2410c", bg: "#fff7ed" },
+  // Created automatically by the Orders page when a sale is logged — not enterable here,
+  // but still shown in this log for a complete, honest audit trail of the stock.
+  sale: { label: "بيع", icon: "fa-solid fa-cart-shopping", color: "#4338ca", bg: "#eef2ff" },
 };
 
 const today = () => new Date().toISOString().split("T")[0];
@@ -376,7 +379,12 @@ export default function StockPage() {
                       )}
                     </div>
                     <div className="st-item-actions">
-                      {editId === m.id ? (
+                      {m.type === "sale" ? (
+                        <span className="st-item-notes">
+                          <i className="fa-solid fa-lock" style={{ fontSize: 10 }} /> من عملية بيع —
+                          عدّلها من صفحة المبيعات
+                        </span>
+                      ) : editId === m.id ? (
                         <>
                           <button className="st-btn st-btn--save" onClick={() => handleEdit(m.id)}>
                             <i className="fa-solid fa-check" />

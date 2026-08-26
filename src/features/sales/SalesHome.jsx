@@ -36,10 +36,17 @@ const SECTIONS = [
     bg: "#f0fdfa",
     color: "#0f766e",
   },
+  {
+    to: "/sales/orders",
+    icon: "fa-solid fa-file-invoice-dollar",
+    label: "المبيعات",
+    desc: "سجّل عمليات البيع نقداً أو بالدَّين، وتُخصم البضاعة تلقائياً",
+    bg: "#eef2ff",
+    color: "#4338ca",
+  },
 ];
 
 const ROADMAP = [
-  { icon: "fa-solid fa-file-invoice-dollar", label: "الطلبات والفواتير" },
   { icon: "fa-solid fa-car", label: "السيارة والمصاريف" },
   { icon: "fa-solid fa-bullseye", label: "الأهداف والعمولات" },
   { icon: "fa-solid fa-chart-line", label: "التقارير" },
@@ -54,7 +61,16 @@ export default function SalesHome({ nav }) {
   const visits = useFirestoreCollection(uid && ["users", uid, "salesVisits"]);
   const products = useFirestoreCollection(uid && ["users", uid, "salesProducts"]);
   const moves = useFirestoreCollection(uid && ["users", uid, "salesStockMoves"]);
+  const orders = useFirestoreCollection(uid && ["users", uid, "salesOrders"]);
+  const payments = useFirestoreCollection(uid && ["users", uid, "salesPayments"]);
   const name = auth.currentUser?.email?.split("@")[0] || "مندوب المبيعات";
+
+  const salesToday = orders
+    .filter((o) => o.date === today())
+    .reduce((s, o) => s + o.total, 0);
+  const totalOwed =
+    orders.filter((o) => o.paymentType === "credit").reduce((s, o) => s + o.total, 0) -
+    payments.reduce((s, p) => s + p.amount, 0);
 
   const visitsToday = visits.filter((v) => v.date === today()).length;
   const followUps = visits
@@ -122,6 +138,16 @@ export default function SalesHome({ nav }) {
               <div className="shs-stat-val">{visitsToday}</div>
               <div className="shs-stat-lbl">زيارة اليوم</div>
             </div>
+            <div className="shs-stat-card">
+              <div className="shs-stat-val">{salesToday.toLocaleString()}</div>
+              <div className="shs-stat-lbl">مبيعات اليوم</div>
+            </div>
+            {totalOwed > 0 && (
+              <div className="shs-stat-card">
+                <div className="shs-stat-val">{totalOwed.toLocaleString()}</div>
+                <div className="shs-stat-lbl">مستحق على العملاء</div>
+              </div>
+            )}
           </div>
         </div>
       </div>

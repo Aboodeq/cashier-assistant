@@ -4,4 +4,5 @@ export const NAV = [
   { to: "/sales/clients", icon: "fa-solid fa-address-book", label: "العملاء", end: false },
   { to: "/sales/visits", icon: "fa-solid fa-route", label: "الزيارات", end: false },
   { to: "/sales/products", icon: "fa-solid fa-boxes-stacked", label: "المنتجات", end: false },
+  { to: "/sales/orders", icon: "fa-solid fa-file-invoice-dollar", label: "المبيعات", end: false },
 ];
