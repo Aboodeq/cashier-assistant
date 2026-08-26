@@ -204,16 +204,15 @@
   flex-wrap: wrap;
 }
 .gl-stat-chip {
-  flex: 1;
+  flex: 1 1 200px;
   min-width: 160px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 5px;
   padding: 14px 16px;
   border-radius: 13px;
   background: #f8fafc;
   border: 1px solid #f1f5f9;
-  gap: 10px;
 }
 .gl-stat-chip--accent {
   background: #fdf2f8;
@@ -228,7 +227,6 @@
   font-size: 16px;
   font-weight: 900;
   color: #9d174d;
-  white-space: nowrap;
 }
 
 /* Add card */
@@ -520,5 +518,8 @@
   }
   .gl-modal-actions {
     flex-direction: column-reverse;
+  }
+  .gl-stat-chip {
+    flex-basis: 100%;
   }
 }

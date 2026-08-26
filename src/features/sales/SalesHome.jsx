@@ -181,7 +181,7 @@ export default function SalesHome({ nav }) {
               <div className="shs-stat-lbl">زيارة اليوم</div>
             </div>
             {(salesTodayUSD > 0 || salesTodaySYP > 0) && (
-              <div className="shs-stat-card">
+              <div className="shs-stat-card shs-stat-card--wide">
                 <div className="shs-stat-val" style={{ fontSize: 18 }}>
                   {formatDual(salesTodayUSD, salesTodaySYP)}
                 </div>
@@ -189,7 +189,7 @@ export default function SalesHome({ nav }) {
               </div>
             )}
             {(owedUSD > 0 || owedSYP > 0) && (
-              <div className="shs-stat-card">
+              <div className="shs-stat-card shs-stat-card--wide">
                 <div className="shs-stat-val" style={{ fontSize: 18 }}>
                   {formatDual(owedUSD, owedSYP)}
                 </div>
@@ -197,7 +197,7 @@ export default function SalesHome({ nav }) {
               </div>
             )}
             {(expensesMonthUSD > 0 || expensesMonthSYP > 0) && (
-              <div className="shs-stat-card">
+              <div className="shs-stat-card shs-stat-card--wide">
                 <div className="shs-stat-val" style={{ fontSize: 18 }}>
                   {formatDual(expensesMonthUSD, expensesMonthSYP)}
                 </div>
@@ -205,7 +205,7 @@ export default function SalesHome({ nav }) {
               </div>
             )}
             {(commissionUSD > 0 || commissionSYP > 0) && (
-              <div className="shs-stat-card">
+              <div className="shs-stat-card shs-stat-card--wide">
                 <div className="shs-stat-val" style={{ fontSize: 18 }}>
                   {formatDual(commissionUSD, commissionSYP)}
                 </div>

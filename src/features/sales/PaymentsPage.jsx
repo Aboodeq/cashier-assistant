@@ -138,11 +138,11 @@ export default function PaymentsPage() {
               <div className="py-balance-grid">
                 {balances.map((c) => (
                   <div key={c.id} className="py-balance-card">
-                    <div>
+                    <div className="py-balance-info">
                       <div className="py-balance-name">{c.name}</div>
                       <div className="py-balance-territory">{c.territoryName}</div>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                    <div className="py-balance-side">
                       <span className="py-balance-amount">{formatDual(c.usd, c.syp)}</span>
                       <button
                         className="py-balance-btn"

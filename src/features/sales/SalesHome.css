@@ -511,4 +511,10 @@
     flex: 1;
     width: auto;
   }
+  /* Dual-currency stats ("$30 + 130,000 ل.س") are too long to share a row with
+     other cards at this width — give each its own full-width line instead of
+     letting the number wrap mid-string. */
+  .shs-stat-card--wide {
+    flex-basis: 100%;
+  }
 }

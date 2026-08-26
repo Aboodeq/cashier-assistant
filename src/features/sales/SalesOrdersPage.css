@@ -515,11 +515,11 @@ select.so-inp {
   flex-wrap: wrap;
 }
 .so-total-chip {
-  flex: 1;
-  min-width: 130px;
+  flex: 1 1 160px;
+  min-width: 150px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 4px;
   padding: 12px 16px;
   border-radius: 12px;
   background: #fff;
@@ -772,5 +772,8 @@ select.so-inp {
   }
   .so-modal-actions {
     flex-direction: column-reverse;
+  }
+  .so-total-chip {
+    flex-basis: 100%;
   }
 }

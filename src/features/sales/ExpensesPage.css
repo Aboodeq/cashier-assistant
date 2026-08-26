@@ -130,17 +130,16 @@
   animation: exFadeUp 0.5s 0.05s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .ex-stat-chip {
-  flex: 1;
+  flex: 1 1 200px;
   min-width: 160px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 5px;
   padding: 14px 18px;
   border-radius: 14px;
   background: #fff;
   border: 1px solid #f1f5f9;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
-  gap: 10px;
 }
 .ex-stat-chip-lbl {
   font-size: 12px;
@@ -151,7 +150,6 @@
   font-size: 16px;
   font-weight: 900;
   color: #92400e;
-  white-space: nowrap;
 }
 
 /* Category breakdown */
@@ -617,6 +615,9 @@ input.ex-filter-select {
   }
   .ex-modal-actions {
     flex-direction: column-reverse;
+  }
+  .ex-stat-chip {
+    flex-basis: 100%;
   }
 }
 @media (max-width: 420px) {
