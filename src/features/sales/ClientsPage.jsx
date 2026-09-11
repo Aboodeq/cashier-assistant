@@ -7,6 +7,13 @@ import { formatReportTimestamp } from "../../utils/format";
 import { openPrintWindow } from "../../utils/printWindow";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
 import Modal from "../../components/Modal";
+import {
+  clearClientLocation,
+  directionsUrl,
+  hasLocation,
+  saveCurrentLocationToClient,
+  savedOnLabel,
+} from "./clientLocation";
 import { formatDual } from "./currency";
 import { SALES_PRINT_STYLES } from "./printStyles";
 import StatementTemplate from "./StatementTemplate";
@@ -65,8 +72,54 @@ export default function ClientsPage() {
   const [printClient, setPrintClient] = useState(null);
   const printRef = useRef(null);
   const repName = auth.currentUser?.displayName || auth.currentUser?.email?.split("@")[0] || "";
+  const [locationClientId, setLocationClientId] = useState(null);
+  const [locating, setLocating] = useState(false);
+  const [locationMsg, setLocationMsg] = useState(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+  // Read the live client (not a snapshot taken when the modal opened) so the
+  // modal flips to its "saved" state the moment the new location lands.
+  const locationClient = clients.find((c) => c.id === locationClientId);
 
   const setField = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
+
+  const openLocation = (client) => {
+    setLocationClientId(client.id);
+    setLocationMsg(null);
+    setConfirmClear(false);
+  };
+  const closeLocation = () => {
+    if (locating) return;
+    setLocationClientId(null);
+  };
+
+  const handleSaveLocation = async () => {
+    if (!locationClient) return;
+    setLocating(true);
+    setLocationMsg(null);
+    setConfirmClear(false);
+    try {
+      const { accuracy } = await saveCurrentLocationToClient(uid, locationClient.id);
+      setLocationMsg({
+        type: "success",
+        text: `تم حفظ الموقع بنجاح${accuracy ? ` (دقة ±${accuracy} م)` : ""}`,
+      });
+    } catch (err) {
+      setLocationMsg({ type: "error", text: err.message });
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  const handleClearLocation = async () => {
+    if (!locationClient) return;
+    if (!confirmClear) {
+      setConfirmClear(true);
+      return;
+    }
+    await clearClientLocation(uid, locationClient.id);
+    setConfirmClear(false);
+    setLocationMsg({ type: "success", text: "تم حذف الموقع المحفوظ" });
+  };
 
   const handlePrintStatement = (client) => {
     setPrintClient(client);
@@ -424,11 +477,29 @@ export default function ClientsPage() {
                             <i className="fa-solid fa-route" style={{ fontSize: 10 }} />
                             {lastVisitDate(c.id) ? `آخر زيارة: ${lastVisitDate(c.id)}` : "لا توجد زيارات بعد"}
                           </span>
+                          {hasLocation(c) && (
+                            <span className="cl-item-location">
+                              <i className="fa-solid fa-location-dot" style={{ fontSize: 10 }} />
+                              الموقع محفوظ
+                            </span>
+                          )}
                         </div>
                         {c.notes && <div className="cl-item-notes">{c.notes}</div>}
                       </div>
                     </div>
                     <div className="cl-item-actions">
+                      {hasLocation(c) && (
+                        <a
+                          className="cl-btn cl-btn--nav"
+                          href={directionsUrl(c.location)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="فتح الطريق إلى العميل في خرائط جوجل"
+                        >
+                          <i className="fa-solid fa-diamond-turn-right" />
+                          الطريق
+                        </a>
+                      )}
                       <button
                         className="cl-btn cl-btn--sell"
                         onClick={() => navigate("/sales/orders", { state: { clientId: c.id } })}
@@ -453,6 +524,13 @@ export default function ClientsPage() {
                       >
                         <i className="fa-solid fa-route" />
                         زيارة
+                      </button>
+                      <button
+                        className={`cl-btn cl-btn--locate ${hasLocation(c) ? "cl-btn--locate-set" : ""}`}
+                        onClick={() => openLocation(c)}
+                        title={hasLocation(c) ? "إدارة موقع العميل" : "حفظ موقع العميل"}
+                      >
+                        <i className="fa-solid fa-location-dot" />
                       </button>
                       <button
                         className="cl-btn cl-btn--print"
@@ -632,6 +710,113 @@ export default function ClientsPage() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        open={Boolean(locationClient)}
+        onClose={closeLocation}
+        icon="fa-solid fa-location-dot"
+        title="موقع العميل"
+        subtitle={locationClient?.name}
+        maxWidth={520}
+      >
+        {locationClient && (
+          <div className="cl-loc">
+            {hasLocation(locationClient) ? (
+              <>
+                <div className="cl-loc-card cl-loc-card--saved">
+                  <div className="cl-loc-card-ico">
+                    <i className="fa-solid fa-map-location-dot" />
+                  </div>
+                  <div>
+                    <div className="cl-loc-card-title">الموقع محفوظ في ملف العميل</div>
+                    <div className="cl-loc-card-sub">
+                      حُفظ بتاريخ {savedOnLabel(locationClient.location)}
+                      {locationClient.location.accuracy ? ` · دقة ±${locationClient.location.accuracy} م` : ""}
+                    </div>
+                    <div className="cl-loc-coords" dir="ltr">
+                      {Number(locationClient.location.lat).toFixed(6)}, {Number(locationClient.location.lng).toFixed(6)}
+                    </div>
+                  </div>
+                </div>
+
+                <a
+                  className="cl-loc-primary"
+                  href={directionsUrl(locationClient.location)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <i className="fa-solid fa-diamond-turn-right" />
+                  فتح الطريق في خرائط جوجل
+                </a>
+
+                <div className="cl-loc-divider">تحديث الموقع</div>
+                <p className="cl-loc-hint">
+                  استخدم هذا فقط وأنت موجود عند العميل الآن — سيحلّ موقعك الحالي محل الموقع المحفوظ.
+                </p>
+                <button type="button" className="cl-loc-secondary" onClick={handleSaveLocation} disabled={locating}>
+                  {locating ? (
+                    <>
+                      <div className="cl-spinner cl-spinner--dark" />
+                      جاري تحديد موقعك...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-location-crosshairs" />
+                      تحديث بموقعي الحالي
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className={`cl-loc-remove ${confirmClear ? "cl-loc-remove--confirm" : ""}`}
+                  onClick={handleClearLocation}
+                  disabled={locating}
+                >
+                  <i className="fa-solid fa-trash" />
+                  {confirmClear ? "اضغط مرة أخرى لتأكيد حذف الموقع" : "حذف الموقع المحفوظ"}
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="cl-loc-card">
+                  <div className="cl-loc-card-ico">
+                    <i className="fa-solid fa-location-dot" />
+                  </div>
+                  <div>
+                    <div className="cl-loc-card-title">لا يوجد موقع محفوظ لهذا العميل</div>
+                    <div className="cl-loc-card-sub">
+                      عندما تكون عند العميل، احفظ موقعك الحالي في ملفه — وستتمكن لاحقاً من فتح الطريق إليه مباشرة
+                      في خرائط جوجل.
+                    </div>
+                  </div>
+                </div>
+                <button type="button" className="cl-loc-primary" onClick={handleSaveLocation} disabled={locating}>
+                  {locating ? (
+                    <>
+                      <div className="cl-spinner" />
+                      جاري تحديد موقعك...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-location-crosshairs" />
+                      أنا عند العميل — احفظ موقعي الحالي
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+
+            {locationMsg && (
+              <div className={`cl-loc-msg cl-loc-msg--${locationMsg.type}`}>
+                <i
+                  className={`fa-solid ${locationMsg.type === "error" ? "fa-triangle-exclamation" : "fa-circle-check"}`}
+                />
+                {locationMsg.text}
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
 
       {/* Statement print template (off-screen; lifted into the print popup) */}

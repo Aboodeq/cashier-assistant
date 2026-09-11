@@ -168,6 +168,109 @@
 .vs-field--submit {
   grid-column: span 1;
 }
+.vs-field--location {
+  grid-column: 1 / -1;
+}
+.vs-loc-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.vs-loc-toggle--on {
+  border-color: #7dd3fc;
+  background: #f0f9ff;
+}
+.vs-loc-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+/* RTL switch: knob rests on the right when off, slides left when on. */
+.vs-loc-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 99px;
+  background: #cbd5e1;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.vs-loc-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+.vs-loc-toggle--on .vs-loc-switch {
+  background: #0369a1;
+}
+.vs-loc-toggle--on .vs-loc-switch::after {
+  transform: translateX(-18px);
+}
+.vs-loc-toggle input:focus-visible + .vs-loc-switch {
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.25);
+}
+.vs-loc-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.vs-loc-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+.vs-loc-title i {
+  color: #0369a1;
+  font-size: 12px;
+}
+.vs-loc-sub {
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.5;
+}
+.vs-loc-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.vs-loc-msg i {
+  margin-top: 3px;
+}
+.vs-loc-msg--success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+.vs-loc-msg--error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
 .vs-lbl {
   display: flex;
   align-items: center;

@@ -1,6 +1,7 @@
 import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
+import { directionsUrl, hasLocation } from "./clientLocation";
 import { formatDual } from "./currency";
 import { baseUnitLabel, toBaseQty } from "./packaging";
 import "./SalesHome.css";
@@ -254,6 +255,7 @@ export default function SalesHome({ nav }) {
           <div className="shs-followup-list">
             {followUps.map((v) => {
               const due = v.followUpDate <= today();
+              const client = clients.find((c) => c.id === v.clientId);
               return (
                 <div key={v.id} className={`shs-followup-row ${due ? "shs-followup-row--due" : ""}`}>
                   <div className="shs-followup-info">
@@ -264,6 +266,18 @@ export default function SalesHome({ nav }) {
                     </span>
                   </div>
                   <div className="shs-followup-actions">
+                    {hasLocation(client) && (
+                      <a
+                        className="shs-followup-nav"
+                        href={directionsUrl(client.location)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="فتح الطريق إلى العميل في خرائط جوجل"
+                      >
+                        <i className="fa-solid fa-diamond-turn-right" />
+                        الطريق
+                      </a>
+                    )}
                     <button
                       className="shs-followup-visit"
                       onClick={() => nav("/sales/visits", { state: { clientId: v.clientId } })}

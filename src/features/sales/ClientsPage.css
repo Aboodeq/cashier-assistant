@@ -526,6 +526,12 @@ select.cl-inp {
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+.cl-item-meta .cl-item-location {
+  color: #0e7490;
+  font-weight: 600;
 }
 .cl-btn {
   display: flex;
@@ -563,6 +569,30 @@ select.cl-inp {
 .cl-btn--visit:hover {
   background: #e0f2fe;
   transform: scale(1.05);
+}
+.cl-btn--nav {
+  background: linear-gradient(135deg, #0e7490, #0891b2);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(14, 116, 144, 0.28);
+}
+.cl-btn--nav:hover {
+  transform: scale(1.05);
+  box-shadow: 0 5px 14px rgba(14, 116, 144, 0.38);
+}
+.cl-btn--locate {
+  background: #f1f5f9;
+  color: #64748b;
+}
+.cl-btn--locate:hover {
+  background: #e2e8f0;
+  transform: scale(1.05);
+}
+.cl-btn--locate-set {
+  background: #ecfeff;
+  color: #0e7490;
+}
+.cl-btn--locate-set:hover {
+  background: #cffafe;
 }
 .cl-btn--print {
   background: #f0fdf4;
@@ -628,6 +658,166 @@ select.cl-inp {
   border: 2px solid rgba(239, 68, 68, 0.2);
   border-top-color: #ef4444;
 }
+.cl-spinner--dark {
+  border: 2.5px solid rgba(14, 116, 144, 0.2);
+  border-top-color: #0e7490;
+}
+
+/* Location modal */
+.cl-loc {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cl-loc-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+.cl-loc-card--saved {
+  background: #ecfeff;
+  border-color: #a5f3fc;
+}
+.cl-loc-card-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  flex-shrink: 0;
+  background: #fff;
+  color: #0e7490;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+}
+.cl-loc-card-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 3px;
+}
+.cl-loc-card-sub {
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.6;
+}
+.cl-loc-coords {
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-family: ui-monospace, Consolas, monospace;
+  text-align: left;
+}
+.cl-loc-primary,
+.cl-loc-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.cl-loc-primary {
+  border: none;
+  background: linear-gradient(135deg, #0e7490, #0891b2);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(14, 116, 144, 0.32);
+}
+.cl-loc-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(14, 116, 144, 0.42);
+}
+.cl-loc-secondary {
+  border: 1.5px solid #a5f3fc;
+  background: #fff;
+  color: #0e7490;
+}
+.cl-loc-secondary:hover:not(:disabled) {
+  background: #ecfeff;
+}
+.cl-loc-primary:disabled,
+.cl-loc-secondary:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+.cl-loc-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+.cl-loc-divider::before,
+.cl-loc-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+.cl-loc-hint {
+  font-size: 12px;
+  color: #b45309;
+  line-height: 1.6;
+}
+.cl-loc-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.cl-loc-remove:hover:not(:disabled) {
+  color: #dc2626;
+  background: #fef2f2;
+}
+.cl-loc-remove--confirm {
+  color: #fff !important;
+  background: #dc2626 !important;
+}
+.cl-loc-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.cl-loc-msg i {
+  margin-top: 3px;
+}
+.cl-loc-msg--success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+.cl-loc-msg--error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
 
 /* Responsive */
 @media (max-width: 760px) {
@@ -660,5 +850,14 @@ select.cl-inp {
   }
   .cl-modal-actions {
     flex-direction: column-reverse;
+  }
+  .cl-item-left {
+    min-width: 0;
+    flex-basis: 100%;
+  }
+  .cl-item-actions {
+    width: 100%;
+    padding-top: 10px;
+    border-top: 1px solid #f1f5f9;
   }
 }

@@ -5,6 +5,7 @@ import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
 import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
 import Modal from "../../components/Modal";
+import { getCurrentCoords, hasLocation, saveClientLocation } from "./clientLocation";
 import "./VisitsPage.css";
 
 const OUTCOMES = [
@@ -43,13 +44,32 @@ export default function VisitsPage() {
   const [filterTerritory, setFilterTerritory] = useState("");
   const [filterClient, setFilterClient] = useState("");
   const [filterOutcome, setFilterOutcome] = useState("");
+  // null = follow the smart default below; true/false once the rep toggles it.
+  const [captureLoc, setCaptureLoc] = useState(null);
+  const [visitMsg, setVisitMsg] = useState(null);
 
   const setField = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
+
+  const selectedClient = clients.find((c) => c.id === form.clientId);
+  const selectedHasLocation = hasLocation(selectedClient);
+  // Default ON for a client with no saved location yet (first visit is the
+  // natural moment to capture it), OFF once one exists so logging a later
+  // visit from somewhere else can't silently overwrite a good location.
+  const effectiveCapture = captureLoc ?? !selectedHasLocation;
 
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.clientId) return;
     setLoading(true);
+    setVisitMsg(null);
+    // Start the GPS request inside the submit tap itself — some mobile browsers
+    // only show the location-permission prompt for gesture-initiated requests.
+    const locationTask = effectiveCapture
+      ? getCurrentCoords().then(
+          (coords) => ({ coords }),
+          (error) => ({ error }),
+        )
+      : null;
     const client = clients.find((c) => c.id === form.clientId);
     await addDoc(collection(db, "users", uid, "salesVisits"), {
       clientId: form.clientId,
@@ -63,7 +83,17 @@ export default function VisitsPage() {
       notes: form.notes.trim(),
       createdAt: Date.now(),
     });
+    if (locationTask) {
+      const result = await locationTask;
+      if (result.coords) {
+        await saveClientLocation(uid, form.clientId, result.coords);
+        setVisitMsg({ type: "success", text: `تم تسجيل الزيارة وحفظ موقع "${client?.name || ""}" في ملفه` });
+      } else {
+        setVisitMsg({ type: "error", text: `تم تسجيل الزيارة، لكن تعذّر حفظ الموقع: ${result.error.message}` });
+      }
+    }
     setForm({ ...emptyForm, clientId: form.clientId });
+    setCaptureLoc(null);
     setLoading(false);
   };
 
@@ -150,7 +180,16 @@ export default function VisitsPage() {
                   </label>
                   <div className="vs-inp-wrap">
                     <i className="fa-solid fa-address-book vs-ico" />
-                    <select className="vs-inp" value={form.clientId} onChange={setField("clientId")} required>
+                    <select
+                      className="vs-inp"
+                      value={form.clientId}
+                      onChange={(e) => {
+                        setForm((p) => ({ ...p, clientId: e.target.value }));
+                        setCaptureLoc(null);
+                        setVisitMsg(null);
+                      }}
+                      required
+                    >
                       <option value="">اختر العميل...</option>
                       {clients.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -205,6 +244,27 @@ export default function VisitsPage() {
                     />
                   </div>
                 </div>
+                {form.clientId && (
+                  <label className={`vs-field--location vs-loc-toggle ${effectiveCapture ? "vs-loc-toggle--on" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={effectiveCapture}
+                      onChange={(e) => setCaptureLoc(e.target.checked)}
+                    />
+                    <span className="vs-loc-switch" aria-hidden="true" />
+                    <span className="vs-loc-text">
+                      <span className="vs-loc-title">
+                        <i className="fa-solid fa-location-dot" />
+                        {selectedHasLocation ? "تحديث موقع العميل بموقعي الحالي" : "حفظ موقعي الحالي كموقع لهذا العميل"}
+                      </span>
+                      <span className="vs-loc-sub">
+                        {selectedHasLocation
+                          ? "للعميل موقع محفوظ مسبقاً — فعّل هذا فقط إذا كنت عنده الآن وتريد تحديثه"
+                          : "تأكد أنك موجود عند العميل الآن — ستتمكن لاحقاً من فتح الطريق إليه من صفحة العملاء"}
+                      </span>
+                    </span>
+                  </label>
+                )}
                 <div className="vs-field vs-field--notes">
                   <label className="vs-lbl">
                     <i className="fa-regular fa-note-sticky" />
@@ -227,7 +287,7 @@ export default function VisitsPage() {
                     {loading ? (
                       <>
                         <div className="vs-spinner" />
-                        جاري...
+                        {effectiveCapture ? "جاري تحديد الموقع..." : "جاري..."}
                       </>
                     ) : (
                       <>
@@ -238,6 +298,14 @@ export default function VisitsPage() {
                   </button>
                 </div>
               </form>
+            )}
+            {visitMsg && (
+              <div className={`vs-loc-msg vs-loc-msg--${visitMsg.type}`}>
+                <i
+                  className={`fa-solid ${visitMsg.type === "error" ? "fa-triangle-exclamation" : "fa-circle-check"}`}
+                />
+                {visitMsg.text}
+              </div>
             )}
           </div>
 
