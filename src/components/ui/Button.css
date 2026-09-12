@@ -1,0 +1,158 @@
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  font-family: var(--font);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    box-shadow 0.15s,
+    transform 0.1s;
+}
+.ui-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.ui-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ui-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+}
+.ui-btn i {
+  font-size: 0.95em;
+}
+.ui-btn-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Sizes */
+.ui-btn--sm {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: 10px;
+}
+.ui-btn--md {
+  height: 44px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+.ui-btn--lg {
+  height: 52px;
+  padding: 0 22px;
+  font-size: 16px;
+  border-radius: 14px;
+}
+.ui-btn--icon-only {
+  padding: 0;
+  flex-shrink: 0;
+}
+.ui-btn--icon-only.ui-btn--sm {
+  width: 34px;
+}
+.ui-btn--icon-only.ui-btn--md {
+  width: 44px;
+}
+.ui-btn--icon-only.ui-btn--lg {
+  width: 52px;
+}
+.ui-btn--block {
+  width: 100%;
+}
+
+/* Variants */
+.ui-btn--primary {
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(67, 56, 202, 0.25);
+}
+.ui-btn--primary:hover:not(:disabled) {
+  background: var(--brand-600);
+}
+.ui-btn--soft {
+  background: var(--brand-50);
+  color: var(--brand-700);
+}
+.ui-btn--soft:hover:not(:disabled) {
+  background: var(--brand-100);
+}
+.ui-btn--secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--line);
+}
+.ui-btn--secondary:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: #d5dbe5;
+}
+.ui-btn--ghost {
+  background: transparent;
+  color: var(--text-2);
+}
+.ui-btn--ghost:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.ui-btn--danger {
+  background: var(--danger);
+  color: #fff;
+}
+.ui-btn--danger:hover:not(:disabled) {
+  background: var(--danger-600);
+}
+.ui-btn--danger-soft {
+  background: var(--danger-50);
+  color: var(--danger-600);
+}
+.ui-btn--danger-soft:hover:not(:disabled) {
+  background: var(--danger-100);
+}
+.ui-btn--success {
+  background: var(--success);
+  color: #fff;
+}
+.ui-btn--success:hover:not(:disabled) {
+  background: var(--success-600);
+}
+.ui-btn--success-soft {
+  background: var(--success-50);
+  color: var(--success-600);
+}
+.ui-btn--success-soft:hover:not(:disabled) {
+  background: var(--success-100);
+}
+.ui-btn--whatsapp {
+  background: #25d366;
+  color: #fff;
+}
+.ui-btn--whatsapp:hover:not(:disabled) {
+  background: #1ebe5b;
+}
+
+.ui-btn-spin {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: ui-btn-spin 0.7s linear infinite;
+}
+@keyframes ui-btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

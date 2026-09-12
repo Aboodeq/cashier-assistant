@@ -1,0 +1,278 @@
+/*
+ * Printable documents. These classes are only ever used inside #print-root,
+ * which is hidden on screen — so nothing here can affect the app's UI.
+ */
+.doc {
+  width: 100%;
+  background: #fff;
+  color: #111827;
+  font-family: var(--font);
+  font-size: 12.5px;
+  line-height: 1.55;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.doc * {
+  box-sizing: border-box;
+}
+.doc-num {
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Header */
+.doc-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #111827;
+}
+.doc-biz-name {
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1.3;
+}
+.doc-biz-meta {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #4b5563;
+}
+.doc-head-left {
+  text-align: left;
+  flex-shrink: 0;
+}
+.doc-title {
+  font-size: 17px;
+  font-weight: 900;
+}
+.doc-meta {
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: #374151;
+}
+
+/* Info boxes */
+.doc-parties {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.doc-box {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+}
+.doc-box-label {
+  margin-bottom: 3px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #6b7280;
+}
+.doc-box-name {
+  font-size: 14px;
+  font-weight: 900;
+}
+.doc-box-line {
+  font-size: 11.5px;
+  color: #374151;
+}
+
+.doc-section-title {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+/* Table */
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+.doc-table th {
+  padding: 6px 5px;
+  border: 1px solid #c9cfd8;
+  background: #f3f4f6;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-align: center;
+}
+.doc-table td {
+  padding: 5px;
+  border: 1px solid #dadfe6;
+  font-size: 11.5px;
+  text-align: center;
+}
+.doc-table tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.doc-table .doc-cell-name {
+  text-align: right;
+}
+.doc-table .doc-row-bonus td {
+  background: #f8fafc;
+  color: #4b5563;
+  font-size: 11px;
+}
+.doc-table tfoot td {
+  font-weight: 900;
+  background: #f3f4f6;
+}
+.doc-empty {
+  margin-top: 8px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+  color: #6b7280;
+  text-align: center;
+}
+
+/* Totals */
+.doc-summary {
+  width: 58%;
+  margin-top: 10px;
+  margin-inline-start: auto;
+}
+.doc-sum-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 2px;
+  border-bottom: 1px dashed #e5e7eb;
+}
+.doc-sum-row--grand {
+  margin-top: 4px;
+  padding-top: 7px;
+  border-top: 2px solid #111827;
+  border-bottom: none;
+  font-size: 14.5px;
+  font-weight: 900;
+}
+.doc-sum-value {
+  font-weight: 800;
+}
+
+.doc-note {
+  margin-top: 10px;
+  padding: 7px 10px;
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+  font-size: 11.5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.doc-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border: 1px solid;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+.doc-badge--ok {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
+}
+.doc-badge--warn {
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+}
+.doc-badge--bad {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+/* Signatures + footer */
+.doc-signs {
+  display: flex;
+  gap: 30px;
+  margin-top: 26px;
+}
+.doc-sign {
+  flex: 1;
+  font-size: 11.5px;
+  color: #4b5563;
+  text-align: center;
+}
+.doc-sign-line {
+  margin-top: 26px;
+  padding-top: 4px;
+  border-top: 1px solid #9ca3af;
+}
+.doc-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 7px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 10.5px;
+  color: #6b7280;
+}
+
+/* Receipt-roll variant */
+.doc--narrow {
+  font-size: 11px;
+  line-height: 1.5;
+}
+.doc--narrow .doc-head {
+  display: block;
+  text-align: center;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #9ca3af;
+}
+.doc--narrow .doc-head-left {
+  margin-top: 4px;
+  text-align: center;
+}
+.doc--narrow .doc-biz-name {
+  font-size: 15px;
+}
+.doc--narrow .doc-title {
+  font-size: 13px;
+}
+.doc--narrow .doc-parties {
+  display: block;
+}
+.doc--narrow .doc-box {
+  border: none;
+  padding: 4px 0;
+  border-bottom: 1px dashed #d1d5db;
+}
+.doc--narrow .doc-box-name {
+  font-size: 12.5px;
+}
+.doc--narrow .doc-table th,
+.doc--narrow .doc-table td {
+  padding: 3px 2px;
+  font-size: 10.5px;
+  border-color: #e5e7eb;
+}
+.doc--narrow .doc-summary {
+  width: 100%;
+}
+.doc--narrow .doc-sum-row--grand {
+  font-size: 13px;
+}
+.doc--narrow .doc-signs {
+  display: none;
+}
+.doc--narrow .doc-foot {
+  display: block;
+  text-align: center;
+}
+.doc--narrow .doc-foot > span {
+  display: block;
+}

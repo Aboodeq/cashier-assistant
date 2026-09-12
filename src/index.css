@@ -34,6 +34,51 @@
   --teal-600: #0d9488;
 
   --font: "Tajawal", sans-serif;
+
+  /* ── Design tokens (app shell + UI kit) ── */
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #f1f4f9;
+  --line: #e4e8f0;
+  --line-2: #eef1f6;
+  --text: #0f172a;
+  --text-2: #475569;
+  --text-3: #8a96a8;
+
+  --brand: #4f46e5;
+  --brand-600: #4338ca;
+  --brand-700: #3730a3;
+  --brand-50: #eef2ff;
+  --brand-100: #e0e7ff;
+
+  --success: #059669;
+  --success-600: #047857;
+  --success-50: #ecfdf5;
+  --success-100: #d1fae5;
+  --warning: #d97706;
+  --warning-50: #fffbeb;
+  --warning-100: #fef3c7;
+  --danger: #dc2626;
+  --danger-600: #b91c1c;
+  --danger-50: #fef2f2;
+  --danger-100: #fee2e2;
+  --info: #0284c7;
+  --info-50: #f0f9ff;
+  --info-100: #e0f2fe;
+
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-full: 999px;
+
+  --sh-1: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --sh-2: 0 1px 3px rgba(15, 23, 42, 0.06), 0 6px 16px rgba(15, 23, 42, 0.05);
+  --sh-3: 0 18px 48px rgba(15, 23, 42, 0.18);
+
+  --tabbar-h: 64px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
 }
 
 html {
@@ -63,6 +108,40 @@ input,
 select,
 textarea {
   font-family: var(--font);
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ─── Printing ───
+   Documents are rendered into #print-root (see src/utils/print.jsx) and
+   printed in-page — no popup windows, which Android Chrome blocks or closes
+   before its print dialog appears. While printing, everything except that
+   document is hidden. */
+#print-root {
+  display: none;
+}
+@media print {
+  body.is-printing > *:not(#print-root) {
+    display: none !important;
+  }
+  body.is-printing #print-root {
+    display: block !important;
+  }
+  html,
+  body.is-printing {
+    background: #fff !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+}
+#print-root.is-measuring {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  visibility: hidden;
 }
 input:focus,
 button:focus {

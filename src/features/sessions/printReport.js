@@ -1,8 +1,8 @@
-import { openPrintWindow as openWindow } from "../../utils/printWindow";
+import { printHtml } from "../../utils/print";
 
-/** Opens the session report print window with this file's own report stylesheet. */
-export function openPrintWindow({ title, bodyHtml }) {
-  return openWindow({ title, bodyHtml, styles: PRINT_STYLES });
+/** Prints the session report HTML with this file's own report stylesheet. */
+export function printSessionReport({ title, html }) {
+  printHtml({ title, html, css: PRINT_STYLES });
 }
 
 const PRINT_STYLES = `

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase/config";
 import { useFirestoreCollection } from "../../hooks/useFirestoreCollection";
@@ -14,7 +15,7 @@ import ConfirmDeleteDialog from "../../components/ConfirmDeleteDialog";
 import { Spin, Empty } from "./SessionShared";
 import PrintDialog from "./PrintDialog";
 import PrintTemplate from "./PrintTemplate";
-import { openPrintWindow } from "./printReport";
+import { printSessionReport } from "./printReport";
 import "./EntriesPage.css";
 
 export default function EntriesPage({ session, onBack, defaultTab }) {
@@ -129,22 +130,16 @@ export default function EntriesPage({ session, onBack, defaultTab }) {
     return `${base} - ${session.companyName}`;
   };
 
+  // flushSync renders the off-screen template for this mode immediately, so
+  // printing still happens inside the tap itself (mobile browsers can refuse
+  // print() calls that arrive later from a timer).
   const handlePrint = (mode) => {
-    setPrintDialog(false);
-    setPrintMode(mode);
-    setTimeout(() => {
-      const bodyHtml = printRef.current?.innerHTML || "";
-      const w = openPrintWindow({ title: `تقرير — ${session.label}`, bodyHtml });
-      if (!w) {
-        setPrintMode(null);
-        return;
-      }
-      setTimeout(() => {
-        w.print();
-        w.close();
-        setPrintMode(null);
-      }, 500);
-    }, 150);
+    flushSync(() => {
+      setPrintDialog(false);
+      setPrintMode(mode);
+    });
+    printSessionReport({ title: `تقرير — ${session.label}`, html: printRef.current?.innerHTML || "" });
+    setPrintMode(null);
   };
 
   const pRows = !printMode
