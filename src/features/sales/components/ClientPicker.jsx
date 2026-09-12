@@ -39,10 +39,7 @@ export default function ClientPicker({ onClose, onPick, onCreate, title = "اخ�
               return (
                 <ListRow
                   key={client.id}
-                  onClick={() => {
-                    onPick(client);
-                    onClose();
-                  }}
+                  onClick={() => onPick(client)}
                   chevron={false}
                   leading={<Avatar name={client.name} />}
                   title={

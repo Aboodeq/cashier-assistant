@@ -39,7 +39,7 @@ function readCollapsed() {
  * Desktop shows the sidebar; phones get the bottom tab bar instead. Pages
  * render their own sticky header, which doubles as the phone's top bar.
  */
-export default function AppShell({ groups, tabs, children }) {
+export default function AppShell({ groups = [], tabs = [], children }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(readCollapsed);

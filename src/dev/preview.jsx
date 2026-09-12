@@ -6,6 +6,10 @@ import "../index.css";
 import AppShell from "../components/layout/AppShell";
 import { SalesDataContext } from "../features/sales/data/salesContext";
 import { SALES_NAV, SALES_TABS } from "../features/sales/nav";
+import { DASHBOARD_NAV, DASHBOARD_TABS } from "../features/dashboard/nav";
+import DashboardHome from "../features/dashboard/DashboardHome";
+import CompaniesPage from "../features/companies/CompaniesPage";
+import SessionsPage from "../features/sessions/SessionsPage";
 import { balanceMap } from "../features/sales/domain/ledger";
 import { stockMap } from "../features/sales/domain/stock";
 import { todayISO, addDays } from "../features/sales/domain/dates";
@@ -130,7 +134,9 @@ const value = {
   ready: true,
 };
 
-const path = new URLSearchParams(window.location.search).get("path") || "/sales";
+const params = new URLSearchParams(window.location.search);
+const path = params.get("path") || "/sales";
+const cashierMode = path.startsWith("/dashboard");
 
 /** Dev probe: lists elements wider than the viewport so layout bugs are visible. */
 function OverflowProbe() {
@@ -158,8 +164,11 @@ createRoot(document.getElementById("root")).render(
   <MemoryRouter initialEntries={[path]}>
     <SalesDataContext.Provider value={value}>
       {new URLSearchParams(window.location.search).has("probe") && <OverflowProbe />}
-      <AppShell groups={SALES_NAV} tabs={SALES_TABS}>
+      <AppShell groups={cashierMode ? DASHBOARD_NAV : SALES_NAV} tabs={cashierMode ? DASHBOARD_TABS : SALES_TABS}>
         <Routes>
+          <Route path="/dashboard" element={<DashboardHome nav={() => {}} />} />
+          <Route path="/dashboard/companies" element={<CompaniesPage />} />
+          <Route path="/dashboard/sessions" element={<SessionsPage />} />
           <Route path="/sales" element={<TodayPage />} />
           <Route path="/sales/invoices" element={<InvoicesPage />} />
           <Route path="/sales/invoices/new" element={<InvoiceEditorPage />} />

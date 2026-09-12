@@ -36,10 +36,7 @@ export default function ProductPicker({ onClose, onPick, tier = "retail", date, 
               return (
                 <ListRow
                   key={product.id}
-                  onClick={() => {
-                    onPick(product);
-                    onClose();
-                  }}
+                  onClick={() => onPick(product)}
                   chevron={false}
                   leading={<IconTile icon="fa-solid fa-box" tone={available > 0 ? "brand" : "neutral"} />}
                   title={

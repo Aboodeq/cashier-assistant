@@ -123,7 +123,10 @@ export default function PaymentSheet({ payment, clientId, onClose, onSaved }) {
       {picking && (
         <ClientPicker
           onClose={() => setPicking(false)}
-          onPick={(c) => setSelectedId(c.id)}
+          onPick={(c) => {
+            setSelectedId(c.id);
+            setPicking(false);
+          }}
           title="اختر العميل المُحصّل منه"
         />
       )}

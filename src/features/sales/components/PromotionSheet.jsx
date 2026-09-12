@@ -202,7 +202,15 @@ export default function PromotionSheet({ promotion, onClose, onDelete }) {
         </form>
       </Sheet>
 
-      {picking && <ProductPicker onClose={() => setPicking(false)} onPick={(p) => setProductId(p.id)} />}
+      {picking && (
+        <ProductPicker
+          onClose={() => setPicking(false)}
+          onPick={(p) => {
+            setProductId(p.id);
+            setPicking(false);
+          }}
+        />
+      )}
     </>
   );
 }

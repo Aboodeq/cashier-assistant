@@ -427,7 +427,10 @@ export default function InvoiceEditorPage() {
       {sheet?.type === "client" && (
         <ClientPicker
           onClose={() => setSheet(null)}
-          onPick={pickClient}
+          onPick={(picked) => {
+            pickClient(picked);
+            setSheet(null);
+          }}
           onCreate={() => setSheet({ type: "newClient" })}
         />
       )}

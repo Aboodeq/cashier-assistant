@@ -4,13 +4,13 @@ import CompaniesPage from "../companies/CompaniesPage";
 import RepresentativesPage from "../representatives/RepresentativesPage";
 import SessionsPage from "../sessions/SessionsPage";
 import DashboardHome from "./DashboardHome";
-import { NAV } from "./nav";
+import { DASHBOARD_NAV, DASHBOARD_TABS } from "./nav";
 
 export default function DashboardShell() {
   const navigate = useNavigate();
 
   return (
-    <AppShell navItems={NAV}>
+    <AppShell groups={DASHBOARD_NAV} tabs={DASHBOARD_TABS}>
       <Routes>
         <Route index element={<DashboardHome nav={navigate} />} />
         <Route path="companies" element={<CompaniesPage />} />

@@ -126,7 +126,15 @@ export default function VisitSheet({ visit, clientId, onClose, onSaved }) {
         </form>
       </Sheet>
 
-      {picking && <ClientPicker onClose={() => setPicking(false)} onPick={(c) => setSelectedId(c.id)} />}
+      {picking && (
+        <ClientPicker
+          onClose={() => setPicking(false)}
+          onPick={(c) => {
+            setSelectedId(c.id);
+            setPicking(false);
+          }}
+        />
+      )}
     </>
   );
 }
