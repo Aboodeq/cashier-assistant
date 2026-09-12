@@ -30,10 +30,23 @@ const colRef = (name) => collection(db, "users", uid(), name);
 const docRef = (name, id) => doc(db, "users", uid(), name, id);
 const newRef = (name) => doc(colRef(name));
 
+/**
+ * Firestore rejects `undefined` field values, and forms routinely produce them
+ * (e.g. `createdAt: existing?.createdAt` when editing a document written before
+ * that field existed). Drop them — `null` is used where a value is cleared.
+ */
+function prune(data) {
+  const clean = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) clean[key] = value;
+  }
+  return clean;
+}
+
 /** Upsert helper: keeps createdAt on updates, stamps it on inserts. */
 function save(name, data, id) {
   const ref = id ? docRef(name, id) : newRef(name);
-  const payload = { ...data, updatedAt: nowMs() };
+  const payload = prune({ ...data, updatedAt: nowMs() });
   if (!id || data.createdAt) payload.createdAt = data.createdAt || nowMs();
   track(setDoc(ref, payload, { merge: true }));
   return ref.id;
@@ -78,7 +91,7 @@ export const deleteGoal = (id) => remove("salesGoals", id);
 
 /* ── Settings ── */
 export const saveSettings = (data) =>
-  track(setDoc(docRef("salesSettings", "main"), { ...data, updatedAt: nowMs() }, { merge: true }));
+  track(setDoc(docRef("salesSettings", "main"), prune({ ...data, updatedAt: nowMs() }), { merge: true }));
 
 /* ── Stock moves ── */
 export const saveMove = (data, id) => save("salesStockMoves", data, id);
@@ -92,15 +105,15 @@ export const deleteMove = (id) => remove("salesStockMoves", id);
 export function saveOrder({ order, id, moves = [], payments = [], replaceMoves = [], replacePayments = [] }) {
   const batch = writeBatch(db);
   const ref = id ? docRef("salesOrders", id) : newRef("salesOrders");
-  batch.set(ref, { ...order, createdAt: order.createdAt || nowMs(), updatedAt: nowMs() });
+  batch.set(ref, prune({ ...order, createdAt: order.createdAt || nowMs(), updatedAt: nowMs() }));
 
   for (const move of replaceMoves) batch.delete(docRef("salesStockMoves", move.id));
   for (const payment of replacePayments) batch.delete(docRef("salesPayments", payment.id));
   for (const move of moves) {
-    batch.set(newRef("salesStockMoves"), { ...move, orderId: ref.id, createdAt: nowMs() });
+    batch.set(newRef("salesStockMoves"), prune({ ...move, orderId: ref.id, createdAt: nowMs() }));
   }
   for (const payment of payments) {
-    batch.set(newRef("salesPayments"), { ...payment, orderId: ref.id, createdAt: nowMs() });
+    batch.set(newRef("salesPayments"), prune({ ...payment, orderId: ref.id, createdAt: nowMs() }));
   }
   track(batch.commit());
   return ref.id;
@@ -118,10 +131,10 @@ export function deleteOrder({ order, moves = [], payments = [] }) {
 export function saveLoad({ load, moves, id, replaceMoves = [] }) {
   const batch = writeBatch(db);
   const ref = id ? docRef("salesLoads", id) : newRef("salesLoads");
-  batch.set(ref, { ...load, createdAt: load.createdAt || nowMs(), updatedAt: nowMs() });
+  batch.set(ref, prune({ ...load, createdAt: load.createdAt || nowMs(), updatedAt: nowMs() }));
   for (const move of replaceMoves) batch.delete(docRef("salesStockMoves", move.id));
   for (const move of moves) {
-    batch.set(newRef("salesStockMoves"), { ...move, loadId: ref.id, createdAt: nowMs() });
+    batch.set(newRef("salesStockMoves"), prune({ ...move, loadId: ref.id, createdAt: nowMs() }));
   }
   track(batch.commit());
   return ref.id;
@@ -138,9 +151,9 @@ export function deleteLoad({ load, moves = [] }) {
 export function saveCount({ count, moves }) {
   const batch = writeBatch(db);
   const ref = newRef("salesCounts");
-  batch.set(ref, { ...count, createdAt: nowMs() });
+  batch.set(ref, prune({ ...count, createdAt: nowMs() }));
   for (const move of moves) {
-    batch.set(newRef("salesStockMoves"), { ...move, countId: ref.id, createdAt: nowMs() });
+    batch.set(newRef("salesStockMoves"), prune({ ...move, countId: ref.id, createdAt: nowMs() }));
   }
   track(batch.commit());
   return ref.id;
